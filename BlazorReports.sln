@@ -2,9 +2,9 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{84E7AF5B-BDD3-4FB3-A798-7E8541EE7A1E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlazorReports.Domain", "src\BlazorReports.Domain\BlazorReports.Domain.csproj", "{C2FB0C49-F062-4969-B63B-1D88E532BA94}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{4E174781-D84C-4B89-8F09-7D52C534901C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlazorReports", "src\BlazorReports\BlazorReports.csproj", "{2AA5462E-57F7-4A4B-A1BB-1BFF901A7C22}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -12,12 +12,12 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{C2FB0C49-F062-4969-B63B-1D88E532BA94}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{C2FB0C49-F062-4969-B63B-1D88E532BA94}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{C2FB0C49-F062-4969-B63B-1D88E532BA94}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{C2FB0C49-F062-4969-B63B-1D88E532BA94}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2AA5462E-57F7-4A4B-A1BB-1BFF901A7C22}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2AA5462E-57F7-4A4B-A1BB-1BFF901A7C22}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2AA5462E-57F7-4A4B-A1BB-1BFF901A7C22}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2AA5462E-57F7-4A4B-A1BB-1BFF901A7C22}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{C2FB0C49-F062-4969-B63B-1D88E532BA94} = {84E7AF5B-BDD3-4FB3-A798-7E8541EE7A1E}
+		{2AA5462E-57F7-4A4B-A1BB-1BFF901A7C22} = {84E7AF5B-BDD3-4FB3-A798-7E8541EE7A1E}
 	EndGlobalSection
 EndGlobal
