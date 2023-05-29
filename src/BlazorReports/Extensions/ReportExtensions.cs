@@ -79,7 +79,7 @@ public static class ReportExtensions
           return Results.Problem();
 
         using var report = await reportService.GenerateReport(blazorReport);
-        return Results.File(report.ToArray(), "application/pdf");
+        return Results.File(report.ToArray(), "application/pdf", $"{normalizedReportName}.pdf");
       });
   }
 
@@ -109,7 +109,7 @@ public static class ReportExtensions
           return Results.Problem();
 
         using var report = await reportService.GenerateReport(blazorReport, data);
-        return Results.File(report.ToArray(), "application/pdf");
+        return Results.File(report.ToArray(), "application/pdf", $"{normalizedReportName}.pdf");
       });
   }
 }

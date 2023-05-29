@@ -14,4 +14,8 @@
     <PackageReference Include="ChromeHtmlToPdf" Version="3.0.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\BlazorReports.Components\BlazorReports.Components.csproj" />
+  </ItemGroup>
+
 </Project>

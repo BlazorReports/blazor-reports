@@ -1,3 +1,4 @@
+using BlazorReports.Components;
 using BlazorReports.Models;
 using ChromiumHtmlToPdfLib;
 using ChromiumHtmlToPdfLib.Settings;
@@ -50,7 +51,7 @@ public class ReportService : IReportService
     return reportStream;
   }
 
-  public async Task<MemoryStream> GenerateReport<T>(BlazorReport blazorReport, T data) where T : class
+  public async Task<MemoryStream> GenerateReport<T>(BlazorReport blazorReport, T? data) where T : class
   {
     using var scope = _serviceProvider.CreateScope();
     var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
@@ -60,6 +61,7 @@ public class ReportService : IReportService
     {
       baseStyles = _reportRegistry.BaseStyles;
     }
+
     if (!string.IsNullOrEmpty(blazorReport.BaseStylesPath))
     {
       baseStyles = await File.ReadAllTextAsync(blazorReport.BaseStylesPath);
@@ -81,17 +83,36 @@ public class ReportService : IReportService
       }
     }
 
-    var componentParameters = new Dictionary<string, object?>();
-    componentParameters.Add("BaseStyles", baseStyles);
-    componentParameters.Add("Data", data);
-    componentParameters.Add("GlobalAssets", _reportRegistry.GlobalAssets);
-    componentParameters.Add("ReportAssets", reportAssets);
+    var childComponentParameters = new Dictionary<string, object?>();
+    if (blazorReport.Component.BaseType == typeof(BlazorReportsBase) && _reportRegistry.GlobalAssets.Count != 0)
+    {
+      childComponentParameters.Add("GlobalAssets", _reportRegistry.GlobalAssets);
+    }
+
+    if (reportAssets.Count != 0)
+    {
+      childComponentParameters.Add("ReportAssets", reportAssets);
+    }
+
+    if (data is not null)
+    {
+      childComponentParameters.Add("Data", data);
+    }
+
+    var baseComponentParameters = new Dictionary<string, object?>();
+    if (!string.IsNullOrEmpty(baseStyles))
+    {
+      baseComponentParameters.Add("BaseStyles", baseStyles);
+    }
+
+    baseComponentParameters.Add("ChildComponentType", blazorReport.Component);
+    baseComponentParameters.Add("ChildComponentParameters", childComponentParameters);
 
     await using var htmlRenderer = new HtmlRenderer(scope.ServiceProvider, loggerFactory);
     var html = await htmlRenderer.Dispatcher.InvokeAsync(async () =>
     {
-      var parameters = ParameterView.FromDictionary(componentParameters);
-      var output = await htmlRenderer.RenderComponentAsync(blazorReport.Component, parameters);
+      var parameters = ParameterView.FromDictionary(baseComponentParameters);
+      var output = await htmlRenderer.RenderComponentAsync<BlazorReportsTemplate>(parameters);
       return output.ToHtmlString();
     });
 
@@ -104,62 +125,7 @@ public class ReportService : IReportService
 
   public async Task<MemoryStream> GenerateReport(BlazorReport blazorReport)
   {
-    using var scope = _serviceProvider.CreateScope();
-    var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
-
-    var baseStyles = string.Empty;
-    if (!string.IsNullOrEmpty(_reportRegistry.BaseStyles))
-    {
-      baseStyles = _reportRegistry.BaseStyles;
-    }
-    if (!string.IsNullOrEmpty(blazorReport.BaseStylesPath))
-    {
-      baseStyles = await File.ReadAllTextAsync(blazorReport.BaseStylesPath);
-    }
-
-    var reportAssets = new Dictionary<string, string>();
-    if (!string.IsNullOrEmpty(blazorReport.AssetsPath))
-    {
-      var assetsPath = blazorReport.AssetsPath;
-      var assetsDirectory = new DirectoryInfo(assetsPath);
-      if (assetsDirectory.Exists)
-      {
-        foreach (var file in assetsDirectory.GetFiles())
-        {
-          var fileBytes = await File.ReadAllBytesAsync(file.FullName);
-          var base64Uri = $"data:image/webp;base64,{Convert.ToBase64String(fileBytes)}";
-          reportAssets.Add(file.Name, base64Uri);
-        }
-      }
-    }
-
-    var componentParameters = new Dictionary<string, object?>();
-    if (!string.IsNullOrEmpty(baseStyles))
-    {
-      componentParameters.Add("BaseStyles", baseStyles);
-    }
-    if (_reportRegistry.GlobalAssets.Count != 0)
-    {
-      componentParameters.Add("GlobalAssets", _reportRegistry.GlobalAssets);
-    }
-    if (reportAssets.Count != 0)
-    {
-      componentParameters.Add("ReportAssets", reportAssets);
-    }
-
-    await using var htmlRenderer = new HtmlRenderer(scope.ServiceProvider, loggerFactory);
-    var html = await htmlRenderer.Dispatcher.InvokeAsync(async () =>
-    {
-      var parameters = ParameterView.FromDictionary(componentParameters);
-      var output = await htmlRenderer.RenderComponentAsync(blazorReport.Component, parameters);
-      return output.ToHtmlString();
-    });
-
-    var pageSettings = new PageSettings();
-    using var reportStream = new MemoryStream();
-    using var converter = new Converter();
-    converter.ConvertToPdf(html, reportStream, pageSettings);
-    return reportStream;
+    return await GenerateReport<object>(blazorReport, null);
   }
 
   public BlazorReport? GetReportByName(string name)

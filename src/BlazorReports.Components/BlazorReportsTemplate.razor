@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <style>@BaseStyles;</style>
+</head>
+<body>
+<DynamicComponent Type="@ChildComponentType" Parameters="@ChildComponentParameters" />
+</body>
+</html>
+
+
+@code {
+  [Parameter]
+  public string BaseStyles { get; set; } = "";
+  [Parameter]
+  public required Type ChildComponentType { get; set; }
+  [Parameter]
+  public required IDictionary<string, object> ChildComponentParameters { get; set; }
+}
