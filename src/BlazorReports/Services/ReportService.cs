@@ -9,17 +9,32 @@ using Microsoft.Extensions.Logging;
 
 namespace BlazorReports.Services;
 
+/// <summary>
+/// Service for generating reports
+/// </summary>
 public class ReportService : IReportService
 {
   private readonly IServiceProvider _serviceProvider;
   private readonly BlazorReportRegistry _reportRegistry;
 
+  /// <summary>
+  /// Creates a new instance of <see cref="ReportService"/>
+  /// </summary>
+  /// <param name="serviceProvider"> The service provider </param>
+  /// <param name="reportRegistry"> The report registry </param>
   public ReportService(IServiceProvider serviceProvider, BlazorReportRegistry reportRegistry)
   {
     _serviceProvider = serviceProvider;
     _reportRegistry = reportRegistry;
   }
 
+  /// <summary>
+  /// Generates a report using the specified component and data
+  /// </summary>
+  /// <param name="data"> The data to use in the report </param>
+  /// <typeparam name="T"> The component to use in the report </typeparam>
+  /// <typeparam name="TD"> The type of data to use in the report </typeparam>
+  /// <returns> The generated report </returns>
   public async Task<MemoryStream> GenerateReport<T, TD>(TD data) where T : ComponentBase where TD : class
   {
     using var scope = _serviceProvider.CreateScope();
@@ -51,6 +66,13 @@ public class ReportService : IReportService
     return reportStream;
   }
 
+  /// <summary>
+  /// Generates a report using the specified component and data
+  /// </summary>
+  /// <param name="blazorReport"> The report to generate </param>
+  /// <param name="data"> The data to use in the report </param>
+  /// <typeparam name="T"> The type of data to use in the report </typeparam>
+  /// <returns> The generated report </returns>
   public async Task<MemoryStream> GenerateReport<T>(BlazorReport blazorReport, T? data) where T : class
   {
     using var scope = _serviceProvider.CreateScope();
@@ -123,11 +145,21 @@ public class ReportService : IReportService
     return reportStream;
   }
 
+  /// <summary>
+  /// Generates a report using the specified component
+  /// </summary>
+  /// <param name="blazorReport"> The report to generate </param>
+  /// <returns> The generated report </returns>
   public async Task<MemoryStream> GenerateReport(BlazorReport blazorReport)
   {
     return await GenerateReport<object>(blazorReport, null);
   }
 
+  /// <summary>
+  /// Gets a blazor report by name
+  /// </summary>
+  /// <param name="name"> The name of the report to get </param>
+  /// <returns> The blazor report </returns>
   public BlazorReport? GetReportByName(string name)
   {
     var reportNormalizedName = name.ToLowerInvariant().Trim();
