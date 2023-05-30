@@ -10,10 +10,19 @@
 
 
 @code {
+  /// <summary>
+  /// The base styles to be applied to the component.
+  /// </summary>
   [Parameter]
   public string BaseStyles { get; set; } = "";
+  /// <summary>
+  /// The type of the component to be rendered in the html body.
+  /// </summary>
   [Parameter]
   public required Type ChildComponentType { get; set; }
+  /// <summary>
+  /// The parameters to be passed to the child component.
+  /// </summary>
   [Parameter]
   public required IDictionary<string, object> ChildComponentParameters { get; set; }
 }
