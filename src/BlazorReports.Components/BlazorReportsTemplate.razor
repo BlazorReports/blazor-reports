@@ -19,10 +19,11 @@
   /// The type of the component to be rendered in the html body.
   /// </summary>
   [Parameter]
-  public required Type ChildComponentType { get; set; }
+  public Type ChildComponentType { get; set; } = null!;
   /// <summary>
   /// The parameters to be passed to the child component.
   /// </summary>
   [Parameter]
-  public required IDictionary<string, object> ChildComponentParameters { get; set; }
+  public IDictionary<string, object> ChildComponentParameters { get; set; } = null!;
+
 }
