@@ -1,7 +1,6 @@
 using BlazorReports.Components;
 using BlazorReports.Models;
 using ChromiumHtmlToPdfLib;
-using ChromiumHtmlToPdfLib.Settings;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.DependencyInjection;
@@ -22,7 +21,9 @@ public class ReportService : IReportService
   /// </summary>
   /// <param name="serviceProvider"> The service provider </param>
   /// <param name="reportRegistry"> The report registry </param>
-  public ReportService(IServiceProvider serviceProvider, BlazorReportRegistry reportRegistry)
+  public ReportService(
+    IServiceProvider serviceProvider,
+    BlazorReportRegistry reportRegistry)
   {
     _serviceProvider = serviceProvider;
     _reportRegistry = reportRegistry;
@@ -59,10 +60,9 @@ public class ReportService : IReportService
       return output.ToHtmlString();
     });
 
-    var pageSettings = new PageSettings();
-    using var reportStream = new MemoryStream();
+    var reportStream = new MemoryStream();
     using var converter = new Converter();
-    converter.ConvertToPdf(html, reportStream, pageSettings);
+    converter.ConvertToPdf(html, reportStream, _reportRegistry.DefaultPageSettings);
     return reportStream;
   }
 
@@ -138,8 +138,9 @@ public class ReportService : IReportService
       return output.ToHtmlString();
     });
 
-    var pageSettings = new PageSettings();
-    using var reportStream = new MemoryStream();
+    var pageSettings = blazorReport.PageSettings ?? _reportRegistry.DefaultPageSettings;
+
+    var reportStream = new MemoryStream();
     using var converter = new Converter();
     converter.ConvertToPdf(html, reportStream, pageSettings);
     return reportStream;

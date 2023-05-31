@@ -1,3 +1,5 @@
+using ChromiumHtmlToPdfLib.Settings;
+
 namespace BlazorReports.Models;
 
 /// <summary>
@@ -5,6 +7,15 @@ namespace BlazorReports.Models;
 /// </summary>
 public class BlazorReport
 {
+  /// <summary>
+  /// The name of the report.
+  /// </summary>
+  public required string Name { get; set; }
+
+  /// <summary>
+  /// The normalized name of the report.
+  /// </summary>
+  public required string NormalizedName { get; set; }
   /// <summary>
   /// The type of the component to render.
   /// </summary>
@@ -21,4 +32,9 @@ public class BlazorReport
   /// Assets path to use for the report.
   /// </summary>
   public string? AssetsPath { get; set; }
+
+  /// <summary>
+  /// The page settings to use for the report.
+  /// </summary>
+  public PageSettings? PageSettings { get; set; }
 }
