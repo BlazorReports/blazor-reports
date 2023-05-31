@@ -17,4 +17,9 @@ public class BlazorReportRegistrationOptions
   /// Assets path for the report.
   /// </summary>
   public string? AssetsPath { get; set; }
+
+  /// <summary>
+  /// Settings for generating a PDF
+  /// </summary>
+  public BlazorReportsPageSettings? PdfSettings { get; set; }
 }

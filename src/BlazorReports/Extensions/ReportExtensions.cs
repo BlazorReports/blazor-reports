@@ -28,18 +28,7 @@ public static class ReportExtensions
   {
     var reportRegistry = app.ApplicationServices.GetRequiredService<BlazorReportRegistry>();
 
-    var reportName = options?.ReportName ?? typeof(T).Name;
-    var normalizedReportName = reportName.ToLowerInvariant().Trim();
-    if (reportRegistry.Reports.ContainsKey(normalizedReportName))
-      throw new InvalidOperationException($"Report with name {normalizedReportName} already exists");
-
-    reportRegistry.Reports.Add(normalizedReportName, new BlazorReport
-    {
-      Component = typeof(T),
-      Data = typeof(TD),
-      BaseStylesPath = options?.BaseStylesPath ?? string.Empty,
-      AssetsPath = options?.AssetsPath ?? string.Empty,
-    });
+    reportRegistry.AddReport<T, TD>(options);
 
     return app;
   }
@@ -57,18 +46,7 @@ public static class ReportExtensions
   {
     var reportRegistry = app.ApplicationServices.GetRequiredService<BlazorReportRegistry>();
 
-    var reportName = options?.ReportName ?? typeof(T).Name;
-    var normalizedReportName = reportName.ToLowerInvariant().Trim();
-    if (reportRegistry.Reports.ContainsKey(normalizedReportName))
-      throw new InvalidOperationException($"Report with name {normalizedReportName} already exists");
-
-    reportRegistry.Reports.Add(normalizedReportName, new BlazorReport
-    {
-      Component = typeof(T),
-      Data = null,
-      BaseStylesPath = options?.BaseStylesPath ?? string.Empty,
-      AssetsPath = options?.AssetsPath ?? string.Empty,
-    });
+    reportRegistry.AddReport<T>(options);
 
     return app;
   }
@@ -86,28 +64,13 @@ public static class ReportExtensions
   {
     var reportRegistry = endpoints.ServiceProvider.GetRequiredService<BlazorReportRegistry>();
 
-    var reportNameToUse = options?.ReportName ?? typeof(T).Name;
-    var normalizedReportName = reportNameToUse.ToLowerInvariant().Trim();
-    if (reportRegistry.Reports.ContainsKey(normalizedReportName))
-      throw new InvalidOperationException($"Report with name {normalizedReportName} already exists");
+    var blazorReport = reportRegistry.AddReport<T>(options);
 
-    reportRegistry.Reports.Add(normalizedReportName, new BlazorReport
-    {
-      Component = typeof(T),
-      Data = null,
-      BaseStylesPath = options?.BaseStylesPath ?? string.Empty,
-      AssetsPath = options?.AssetsPath ?? string.Empty,
-    });
-
-    return endpoints.MapPost($"reports/{normalizedReportName}",
+    return endpoints.MapPost($"reports/{blazorReport.NormalizedName}",
       async ([FromServices] IReportService reportService) =>
       {
-        var blazorReport = reportService.GetReportByName(normalizedReportName);
-        if (blazorReport is null)
-          return Results.Problem();
-
         using var report = await reportService.GenerateReport(blazorReport);
-        return Results.File(report.ToArray(), "application/pdf", $"{normalizedReportName}.pdf");
+        return Results.File(report.ToArray(), "application/pdf", $"{blazorReport.Name}.pdf");
       });
   }
 
@@ -125,28 +88,13 @@ public static class ReportExtensions
   {
     var reportRegistry = endpoints.ServiceProvider.GetRequiredService<BlazorReportRegistry>();
 
-    var reportNameToUse = options?.ReportName ?? typeof(T).Name;
-    var normalizedReportName = reportNameToUse.ToLowerInvariant().Trim();
-    if (reportRegistry.Reports.ContainsKey(normalizedReportName))
-      throw new InvalidOperationException($"Report with name {normalizedReportName} already exists");
+    var blazorReport = reportRegistry.AddReport<T, TD>(options);
 
-    reportRegistry.Reports.Add(normalizedReportName, new BlazorReport
-    {
-      Component = typeof(T),
-      Data = typeof(TD),
-      BaseStylesPath = options?.BaseStylesPath ?? string.Empty,
-      AssetsPath = options?.AssetsPath ?? string.Empty,
-    });
-
-    return endpoints.MapPost($"reports/{normalizedReportName}",
+    return endpoints.MapPost($"reports/{blazorReport.NormalizedName}",
       async (TD data, [FromServices] IReportService reportService) =>
       {
-        var blazorReport = reportService.GetReportByName(normalizedReportName);
-        if (blazorReport is null)
-          return Results.Problem();
-
         using var report = await reportService.GenerateReport(blazorReport, data);
-        return Results.File(report.ToArray(), "application/pdf", $"{normalizedReportName}.pdf");
+        return Results.File(report.ToArray(), "application/pdf", $"{blazorReport.Name}.pdf");
       });
   }
 }

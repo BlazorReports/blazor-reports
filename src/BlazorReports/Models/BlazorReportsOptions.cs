@@ -13,4 +13,8 @@ public class BlazorReportsOptions
   /// The path to the assets folder to use in this report
   /// </summary>
   public string? AssetsPath { get; set; }
+  /// <summary>
+  /// Settings for generating a PDF
+  /// </summary>
+  public BlazorReportsPageSettings? PageSettings { get; set; }
 }
