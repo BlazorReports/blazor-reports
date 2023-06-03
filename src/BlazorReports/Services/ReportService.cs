@@ -1,10 +1,11 @@
 using BlazorReports.Components;
 using BlazorReports.Models;
-using ChromiumHtmlToPdfLib;
+using BlazorReports.Services.Browser;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace BlazorReports.Services;
 
@@ -13,20 +14,27 @@ namespace BlazorReports.Services;
 /// </summary>
 public class ReportService : IReportService
 {
+  private readonly IOptions<BlazorReportsOptions> _options;
   private readonly IServiceProvider _serviceProvider;
   private readonly BlazorReportRegistry _reportRegistry;
+  private readonly BrowserService _browserService;
 
   /// <summary>
   /// Creates a new instance of <see cref="ReportService"/>
   /// </summary>
+  /// <param name="options"> The BlazorReportsOptions </param>
   /// <param name="serviceProvider"> The service provider </param>
   /// <param name="reportRegistry"> The report registry </param>
   public ReportService(
+    IOptions<BlazorReportsOptions> options,
     IServiceProvider serviceProvider,
-    BlazorReportRegistry reportRegistry)
+    BlazorReportRegistry reportRegistry
+  )
   {
+    _options = options;
     _serviceProvider = serviceProvider;
     _reportRegistry = reportRegistry;
+    _browserService = new BrowserService();
   }
 
   /// <summary>
@@ -47,10 +55,12 @@ public class ReportService : IReportService
       baseStyles = _reportRegistry.BaseStyles;
     }
 
-    var componentParameters = new Dictionary<string, object?>();
-    componentParameters.Add("BaseStyles", baseStyles);
-    componentParameters.Add("Data", data);
-    componentParameters.Add("GlobalAssets", _reportRegistry.GlobalAssets);
+    var componentParameters = new Dictionary<string, object?>
+    {
+      {"BaseStyles", baseStyles},
+      {"Data", data},
+      {"GlobalAssets", _reportRegistry.GlobalAssets}
+    };
 
     await using var htmlRenderer = new HtmlRenderer(scope.ServiceProvider, loggerFactory);
     var html = await htmlRenderer.Dispatcher.InvokeAsync(async () =>
@@ -61,8 +71,11 @@ public class ReportService : IReportService
     });
 
     var reportStream = new MemoryStream();
-    using var converter = new Converter();
-    converter.ConvertToPdf(html, reportStream, _reportRegistry.DefaultPageSettings);
+    await _browserService.StartBrowserHeadless(_options.Value.Browser);
+    var browserPage = await _browserService.GetBrowserPage();
+    await browserPage.DisplayHtml(html);
+    await browserPage.ConvertPageToPdf(reportStream, _reportRegistry.DefaultPageSettings);
+    _browserService.ReturnBrowserPage(browserPage);
     return reportStream;
   }
 
@@ -141,8 +154,11 @@ public class ReportService : IReportService
     var pageSettings = blazorReport.PageSettings ?? _reportRegistry.DefaultPageSettings;
 
     var reportStream = new MemoryStream();
-    using var converter = new Converter();
-    converter.ConvertToPdf(html, reportStream, pageSettings);
+    await _browserService.StartBrowserHeadless(_options.Value.Browser);
+    var browserPage = await _browserService.GetBrowserPage();
+    await browserPage.DisplayHtml(html);
+    await browserPage.ConvertPageToPdf(reportStream, pageSettings);
+    _browserService.ReturnBrowserPage(browserPage);
     return reportStream;
   }
 

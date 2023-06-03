@@ -8,6 +8,7 @@
     <Title>Blazor Reports</Title>
     <Description>Generate PDF reports using Blazor Components. Easily create a report server or generate reports from existing projects.</Description>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <LangVersion>preview</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,10 +17,6 @@
 
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="ChromeHtmlToPdf" Version="3.0.0" />
   </ItemGroup>
 
   <ItemGroup>

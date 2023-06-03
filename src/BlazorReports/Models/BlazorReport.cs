@@ -1,9 +1,7 @@
-using ChromiumHtmlToPdfLib.Settings;
-
 namespace BlazorReports.Models;
 
 /// <summary>
-///  Represents a Blazor report.
+/// Represents a Blazor report.
 /// </summary>
 public class BlazorReport
 {
@@ -36,5 +34,5 @@ public class BlazorReport
   /// <summary>
   /// The page settings to use for the report.
   /// </summary>
-  public PageSettings? PageSettings { get; set; }
+  public BlazorReportsPageSettings? PageSettings { get; set; }
 }
