@@ -1,3 +1,4 @@
+using System.IO.Pipelines;
 using BlazorReports.Components;
 using BlazorReports.Models;
 using BlazorReports.Services.Browser;
@@ -44,7 +45,7 @@ public class ReportService : IReportService
   /// <typeparam name="T"> The component to use in the report </typeparam>
   /// <typeparam name="TD"> The type of data to use in the report </typeparam>
   /// <returns> The generated report </returns>
-  public async Task<MemoryStream> GenerateReport<T, TD>(TD data) where T : ComponentBase where TD : class
+  public async Task<PipeReader> GenerateReport<T, TD>(TD data) where T : ComponentBase where TD : class
   {
     using var scope = _serviceProvider.CreateScope();
     var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
@@ -70,11 +71,10 @@ public class ReportService : IReportService
       return output.ToHtmlString();
     });
 
-    var reportStream = new MemoryStream();
     await _browserService.StartBrowserHeadless(_options.Value.Browser);
     var browserPage = await _browserService.GetBrowserPage();
     await browserPage.DisplayHtml(html);
-    await browserPage.ConvertPageToPdf(reportStream, _reportRegistry.DefaultPageSettings);
+    var reportStream = browserPage.ConvertPageToPdf(_reportRegistry.DefaultPageSettings);
     _browserService.ReturnBrowserPage(browserPage);
     return reportStream;
   }
@@ -86,7 +86,7 @@ public class ReportService : IReportService
   /// <param name="data"> The data to use in the report </param>
   /// <typeparam name="T"> The type of data to use in the report </typeparam>
   /// <returns> The generated report </returns>
-  public async Task<MemoryStream> GenerateReport<T>(BlazorReport blazorReport, T? data) where T : class
+  public async Task<PipeReader> GenerateReport<T>(BlazorReport blazorReport, T? data) where T : class
   {
     using var scope = _serviceProvider.CreateScope();
     var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
@@ -153,11 +153,10 @@ public class ReportService : IReportService
 
     var pageSettings = blazorReport.PageSettings ?? _reportRegistry.DefaultPageSettings;
 
-    var reportStream = new MemoryStream();
     await _browserService.StartBrowserHeadless(_options.Value.Browser);
     var browserPage = await _browserService.GetBrowserPage();
     await browserPage.DisplayHtml(html);
-    await browserPage.ConvertPageToPdf(reportStream, pageSettings);
+    var reportStream = browserPage.ConvertPageToPdf(pageSettings);
     _browserService.ReturnBrowserPage(browserPage);
     return reportStream;
   }
@@ -167,7 +166,7 @@ public class ReportService : IReportService
   /// </summary>
   /// <param name="blazorReport"> The report to generate </param>
   /// <returns> The generated report </returns>
-  public async Task<MemoryStream> GenerateReport(BlazorReport blazorReport)
+  public async Task<PipeReader> GenerateReport(BlazorReport blazorReport)
   {
     return await GenerateReport<object>(blazorReport, null);
   }

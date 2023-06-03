@@ -1,4 +1,7 @@
 using System.Buffers;
+using System.IO.Pipelines;
+using System.Security.Cryptography;
+using System.Text;
 using BlazorReports.Enums;
 using BlazorReports.Models;
 using BlazorReports.Services.Browser.Requests;
@@ -12,7 +15,6 @@ namespace BlazorReports.Services.Browser;
 public sealed class BrowserPage
 {
   private readonly Connection _connection;
-  private readonly ArrayPool<byte> _bufferPool = ArrayPool<byte>.Shared;
 
   /// <summary>
   /// Creates a new instance of the BrowserPage
@@ -72,19 +74,58 @@ public sealed class BrowserPage
       }, stoppingToken);
   }
 
-  /// <summary>
-  /// Converts the current page to PDF
-  /// </summary>
-  /// <param name="outputStream"> Stream to write the PDF</param>
-  /// <param name="pageSettings"> Page settings</param>
-  /// <param name="stoppingToken"> Cancellation token</param>
-  /// <exception cref="ArgumentException"> Thrown when the output stream is not writable</exception>
-  internal async Task ConvertPageToPdf(Stream outputStream, BlazorReportsPageSettings pageSettings,
+  internal PipeReader ConvertPageToPdf(BlazorReportsPageSettings pageSettings,
     CancellationToken stoppingToken = default)
   {
-    if (!outputStream.CanWrite)
-      throw new ArgumentException("The output stream is not writable", nameof(outputStream));
+    var pipe = new Pipe();
 
+    _ = Task.Run(async () => // running writing to the pipe in background
+    {
+      await WriteToPipe(pipe.Writer, pageSettings, stoppingToken);
+    }, stoppingToken);
+
+    // The reader as a stream can be returned and it will be populated as WriteToPipe executes.
+    return pipe.Reader;
+  }
+
+  private async Task WriteToPipe(PipeWriter writer, BlazorReportsPageSettings pageSettings,
+    CancellationToken stoppingToken = default)
+  {
+    var message = CreatePrintToPdfBrowserMessage(pageSettings);
+
+    await _connection.SendAsync<BrowserResultResponse<PagePrintToPdfResponse>>(message, async pagePrintToPdfResponse =>
+    {
+      if (string.IsNullOrEmpty(pagePrintToPdfResponse.Result.Stream)) return;
+
+      var ioReadMessage = new BrowserMessage("IO.read");
+      ioReadMessage.Parameters.Add("handle", pagePrintToPdfResponse.Result.Stream);
+      ioReadMessage.Parameters.Add("size", 200 * 1024);
+
+      using var transform = new FromBase64Transform(FromBase64TransformMode.IgnoreWhiteSpaces);
+      var finished = false;
+      while (true)
+      {
+        if (finished) break;
+        await _connection.SendAsync<BrowserResultResponse<IoReadResponse>>(ioReadMessage, async ioReadResponse =>
+        {
+          if (ioReadResponse.Result.Eof)
+          {
+            await ClosePdfStream(pagePrintToPdfResponse.Result.Stream, stoppingToken);
+            finished = true;
+            return;
+          }
+
+          await ReadAndTransform(ioReadResponse.Result.Data.AsMemory(), transform, writer, stoppingToken);
+        }, stoppingToken);
+      }
+
+      // Notify the PipeReader that there is no more data to be written
+      await writer.CompleteAsync();
+    }, stoppingToken);
+  }
+
+  private static BrowserMessage CreatePrintToPdfBrowserMessage(BlazorReportsPageSettings pageSettings)
+  {
     var message = new BrowserMessage("Page.printToPDF");
     message.Parameters.Add("landscape", pageSettings.Orientation == BlazorReportsPageOrientation.Landscape);
     message.Parameters.Add("paperHeight", pageSettings.PaperHeight);
@@ -95,48 +136,78 @@ public sealed class BrowserPage
     message.Parameters.Add("marginRight", pageSettings.MarginRight);
     message.Parameters.Add("transferMode", "ReturnAsStream");
 
-    await _connection.SendAsync<BrowserResultResponse<PagePrintToPdfResponse>>(message, async pagePrintToPdfResponse =>
+    return message;
+  }
+
+  private static async Task ReadAndTransform(ReadOnlyMemory<char> data, FromBase64Transform transform,
+    PipeWriter writer, CancellationToken stoppingToken)
+  {
+    if (data.Length == 0)
+      return;
+    var sharedPool = ArrayPool<byte>.Shared;
+    var dataBytes = sharedPool.Rent(data.Length);
+    var inputBlock = sharedPool.Rent(transform.InputBlockSize);
+    var output = sharedPool.Rent(transform.OutputBlockSize);
+
+    try
     {
-      if (string.IsNullOrEmpty(pagePrintToPdfResponse.Result.Stream)) return;
+      var totalBytes = Encoding.UTF8.GetBytes(data.Span, dataBytes);
+      var index = 0;
+      var buffer = writer.GetMemory(transform.OutputBlockSize);
 
-      var ioReadMessage = new BrowserMessage("IO.read");
-      ioReadMessage.Parameters.Add("handle", pagePrintToPdfResponse.Result.Stream);
-      ioReadMessage.Parameters.Add("size", 1 * 1024 * 1024); // Get the pdf in chunks of 1MB
-
-      outputStream.Position = 0;
-      var finished = false;
-      // ReSharper disable once LoopVariableIsNeverChangedInsideLoop (It is changed inside the lambda)
-      while (!finished)
+      while (index < totalBytes)
       {
-        await _connection.SendAsync<BrowserResultResponse<IoReadResponse>>(ioReadMessage, async ioReadResponse =>
-        {
-          // Use a large enough buffer. The maximum possible size can be calculated.
-          var bufferSize = (int) Math.Ceiling(ioReadResponse.Result.Data.Length / 4.0) * 3;
-          var buffer = _bufferPool.Rent(bufferSize);
-          if (Convert.TryFromBase64Chars(ioReadResponse.Result.Data, buffer, out var bytesWritten))
-          {
-            if (bytesWritten > 0)
-              await outputStream.WriteAsync(buffer.AsMemory(0, bytesWritten), stoppingToken);
-          }
-          else
-          {
-            throw new Exception("Conversion failed");
-          }
+        stoppingToken.ThrowIfCancellationRequested();
+        var bytesRead = Math.Min(totalBytes - index, transform.InputBlockSize);
+        var inputBlockMemory = new Memory<byte>(dataBytes, index, bytesRead);
+        index += bytesRead;
 
-          _bufferPool.Return(buffer);
+        var count = transform.TransformBlock(inputBlockMemory.Span.ToArray(), 0, bytesRead, output, 0);
+        output.AsSpan(0, count).CopyTo(buffer.Span);
 
-          if (!ioReadResponse.Result.Eof)
-          {
-            return;
-          }
-
-          var ioCloseMessage = new BrowserMessage("IO.close");
-          ioCloseMessage.Parameters.Add("handle", pagePrintToPdfResponse.Result.Stream);
-          await _connection.SendAsync(ioCloseMessage, stoppingToken: stoppingToken);
-          finished = true;
-        }, stoppingToken);
+        writer.Advance(count);
+        var flushResult = await writer.FlushAsync(stoppingToken);
+        if (flushResult.IsCanceled || flushResult.IsCompleted)
+          break;
+        buffer = writer.GetMemory(count); // Get a new buffer after advancing
       }
-    }, stoppingToken);
+    }
+    finally
+    {
+      sharedPool.Return(dataBytes);
+      sharedPool.Return(inputBlock);
+      sharedPool.Return(output);
+    }
+  }
+
+  private static async Task ReadAndTransformV2(ReadOnlyMemory<char> data, FromBase64Transform transform,
+    PipeWriter writer, CancellationToken stoppingToken)
+  {
+    if (data.Length == 0)
+      return;
+    var sharedPool = ArrayPool<byte>.Shared;
+    var dataBytes = sharedPool.Rent(data.Length);
+
+    try
+    {
+      Convert.TryFromBase64Chars(data.Span, dataBytes, out var bytesWritten);
+      var buffer = writer.GetMemory(bytesWritten);
+      dataBytes.AsSpan(0, bytesWritten).CopyTo(buffer.Span);
+      writer.Advance(bytesWritten);
+
+      await writer.FlushAsync(stoppingToken);
+    }
+    finally
+    {
+      sharedPool.Return(dataBytes);
+    }
+  }
+
+  private async Task ClosePdfStream(string stream, CancellationToken stoppingToken)
+  {
+    var ioCloseMessage = new BrowserMessage("IO.close");
+    ioCloseMessage.Parameters.Add("handle", stream);
+    await _connection.SendAsync(ioCloseMessage, stoppingToken: stoppingToken);
   }
 
   /// <summary>

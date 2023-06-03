@@ -1,3 +1,4 @@
+using System.IO.Pipelines;
 using BlazorReports.Models;
 using Microsoft.AspNetCore.Components;
 
@@ -15,7 +16,7 @@ public interface IReportService
   /// <typeparam name="T"> The component to use in the report </typeparam>
   /// <typeparam name="TD"> The type of data to use in the report </typeparam>
   /// <returns> The generated report </returns>
-  Task<MemoryStream> GenerateReport<T, TD>(TD data) where T : ComponentBase where TD : class;
+  Task<PipeReader> GenerateReport<T, TD>(TD data) where T : ComponentBase where TD : class;
   /// <summary>
   /// Generates a report using the specified component and data
   /// </summary>
@@ -23,13 +24,13 @@ public interface IReportService
   /// <param name="data"> The data to use in the report </param>
   /// <typeparam name="T"> The type of data to use in the report </typeparam>
   /// <returns> The generated report </returns>
-  Task<MemoryStream> GenerateReport<T>(BlazorReport blazorReport, T? data) where T : class;
+  Task<PipeReader> GenerateReport<T>(BlazorReport blazorReport, T? data) where T : class;
   /// <summary>
   /// Generates a report using the specified component
   /// </summary>
   /// <param name="blazorReport"> The report to generate </param>
   /// <returns> The generated report </returns>
-  Task<MemoryStream> GenerateReport(BlazorReport blazorReport);
+  Task<PipeReader> GenerateReport(BlazorReport blazorReport);
   /// <summary>
   /// Gets a blazor report by name
   /// </summary>

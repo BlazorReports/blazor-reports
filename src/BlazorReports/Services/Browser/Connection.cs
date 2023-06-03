@@ -13,7 +13,7 @@ internal sealed class Connection
   private int _lastMessageId;
   private readonly ClientWebSocket _webSocket;
   private readonly ArrayPool<byte> _bufferPool = ArrayPool<byte>.Shared;
-  private const int BufferSize = 2 * 1024 * 1024;
+  private const int BufferSize = 500 * 1024;
 
   /// <summary>
   /// The uri of the connection

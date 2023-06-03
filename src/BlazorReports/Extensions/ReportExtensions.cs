@@ -69,8 +69,8 @@ public static class ReportExtensions
     return endpoints.MapPost($"reports/{blazorReport.NormalizedName}",
       async ([FromServices] IReportService reportService) =>
       {
-        using var report = await reportService.GenerateReport(blazorReport);
-        return Results.File(report.ToArray(), "application/pdf", $"{blazorReport.Name}.pdf");
+        var report = await reportService.GenerateReport(blazorReport);
+        return Results.Stream(report, "application/pdf", $"{blazorReport.Name}.pdf");
       });
   }
 
@@ -93,8 +93,8 @@ public static class ReportExtensions
     return endpoints.MapPost($"reports/{blazorReport.NormalizedName}",
       async (TD data, [FromServices] IReportService reportService) =>
       {
-        using var report = await reportService.GenerateReport(blazorReport, data);
-        return Results.File(report.ToArray(), "application/pdf", $"{blazorReport.Name}.pdf");
+        var report = await reportService.GenerateReport(blazorReport, data);
+        return Results.Stream(report, "application/pdf", $"{blazorReport.Name}.pdf");
       });
   }
 }
