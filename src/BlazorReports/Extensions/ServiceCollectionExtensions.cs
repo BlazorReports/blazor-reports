@@ -14,13 +14,13 @@ public static class ServiceCollectionExtensions
   /// </summary>
   /// <param name="services"></param>
   /// <param name="options"></param>
-  /// <returns></returns>
+  /// <returns> The <see cref="IServiceCollection" /> so that additional calls can be chained. </returns>
   public static IServiceCollection AddBlazorReports(
     this IServiceCollection services, Action<BlazorReportsOptions>? options = null)
   {
     services.Configure(options ?? (_ => { }));
     services.AddSingleton<BlazorReportRegistry>();
-    services.AddScoped<IReportService, ReportService>();
+    services.AddSingleton<IReportService, ReportService>();
 
     return services;
   }
