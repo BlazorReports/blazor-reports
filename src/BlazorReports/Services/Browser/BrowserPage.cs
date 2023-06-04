@@ -160,6 +160,7 @@ public sealed class BrowserPage : IDisposable
   /// </summary>
   public void Dispose()
   {
+    _connection.Dispose();
     Transform.Dispose();
   }
 }

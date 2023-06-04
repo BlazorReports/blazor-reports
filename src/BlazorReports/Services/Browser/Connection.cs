@@ -9,7 +9,7 @@ namespace BlazorReports.Services.Browser;
 /// <summary>
 /// Represents a connection to the browser
 /// </summary>
-internal sealed class Connection
+internal sealed class Connection : IDisposable
 {
   private int _lastMessageId;
   private readonly ClientWebSocket _webSocket;
@@ -183,5 +183,10 @@ internal sealed class Connection
   public async ValueTask CloseAsync(CancellationToken stoppingToken = default)
   {
     await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "", stoppingToken);
+  }
+
+  public void Dispose()
+  {
+    _webSocket.Dispose();
   }
 }
