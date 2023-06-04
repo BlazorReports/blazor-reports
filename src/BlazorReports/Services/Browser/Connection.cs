@@ -1,6 +1,7 @@
 using System.Buffers;
 using System.Net.WebSockets;
 using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
 using BlazorReports.Services.Browser.Requests;
 
 namespace BlazorReports.Services.Browser;
@@ -20,8 +21,6 @@ internal sealed class Connection
   /// </summary>
   public readonly Uri Uri;
 
-  private readonly JsonSerializerOptions _serializeOptions;
-
   /// <summary>
   /// The constructor of the connection
   /// </summary>
@@ -30,10 +29,6 @@ internal sealed class Connection
   {
     Uri = uri;
     _webSocket = new ClientWebSocket();
-    _serializeOptions = new JsonSerializerOptions
-    {
-      PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-    };
   }
 
   /// <summary>
@@ -50,11 +45,16 @@ internal sealed class Connection
   /// <summary>
   /// Sends a message to the browser
   /// </summary>
-  /// <param name="message"></param>
-  /// <param name="responseHandler"></param>
+  /// <param name="message"> The message to send</param>
+  /// <param name="returnDataJsonTypeInfo"> The json type info of the return data</param>
+  /// <param name="responseHandler"> The response handler</param>
   /// <param name="stoppingToken"> Token to stop the task</param>
-  public async ValueTask<TR> SendAsync<T, TR>(BrowserMessage message, Func<T, Task<TR>> responseHandler,
-    CancellationToken stoppingToken = default)
+  public async ValueTask<TR> SendAsync<T, TR>(
+    BrowserMessage message,
+    JsonTypeInfo<T> returnDataJsonTypeInfo,
+    Func<T, Task<TR>> responseHandler,
+    CancellationToken stoppingToken = default
+  )
   {
     message.Id = ++_lastMessageId;
     if (_webSocket.State != WebSocketState.Open)
@@ -62,7 +62,7 @@ internal sealed class Connection
       await _webSocket.ConnectAsync(Uri, stoppingToken);
     }
 
-    var buffer = JsonSerializer.SerializeToUtf8Bytes(message, _serializeOptions);
+    var buffer = JsonSerializer.SerializeToUtf8Bytes(message, BrowserMessageSerializationContext.Default.BrowserMessage);
     await _webSocket.SendAsync(buffer, WebSocketMessageType.Text, true, stoppingToken);
 
     var bufferToReceive = _bufferPool.Rent(BufferSize);
@@ -91,7 +91,7 @@ internal sealed class Connection
       var id = methodElement.GetInt32();
       if (id != message.Id) continue;
 
-      var parsedMessage = JsonSerializer.Deserialize<T>(bufferToReceiveMemory[..result.Count].Span, _serializeOptions);
+      var parsedMessage = JsonSerializer.Deserialize(bufferToReceiveMemory[..result.Count].Span, returnDataJsonTypeInfo);
       if (parsedMessage is null)
         throw new Exception("Could not deserialize response");
 
@@ -106,10 +106,13 @@ internal sealed class Connection
   /// <summary>
   /// Sends a message to the browser
   /// </summary>
-  /// <param name="message"></param>
-  /// <param name="responseHandler"></param>
+  /// <param name="message"> The message to send</param>
+  /// <param name="returnDataJsonTypeInfo"> The json type info of the return data</param>
+  /// <param name="responseHandler"> The response handler</param>
   /// <param name="stoppingToken"> Token to stop the task</param>
-  public async ValueTask SendAsync<T>(BrowserMessage message, Func<T, Task> responseHandler,
+  public async ValueTask SendAsync<T>(BrowserMessage message,
+    JsonTypeInfo<T> returnDataJsonTypeInfo,
+    Func<T, Task> responseHandler,
     CancellationToken stoppingToken = default)
   {
     message.Id = ++_lastMessageId;
@@ -118,7 +121,7 @@ internal sealed class Connection
       await _webSocket.ConnectAsync(Uri, stoppingToken);
     }
 
-    var buffer = JsonSerializer.SerializeToUtf8Bytes(message, _serializeOptions);
+    var buffer = JsonSerializer.SerializeToUtf8Bytes(message, BrowserMessageSerializationContext.Default.BrowserMessage);
     await _webSocket.SendAsync(buffer, WebSocketMessageType.Text, true, stoppingToken);
     var bufferToReceive = _bufferPool.Rent(BufferSize);
     var bufferToReceiveMemory = new Memory<byte>(bufferToReceive);
@@ -146,7 +149,7 @@ internal sealed class Connection
       var id = methodElement.GetInt32();
       if (id != message.Id) continue;
 
-      var parsedMessage = JsonSerializer.Deserialize<T>(bufferToReceiveMemory[..result.Count].Span, _serializeOptions);
+      var parsedMessage = JsonSerializer.Deserialize(bufferToReceiveMemory[..result.Count].Span, returnDataJsonTypeInfo);
       if (parsedMessage is null)
         throw new Exception("Could not deserialize response");
 
@@ -169,7 +172,7 @@ internal sealed class Connection
       await _webSocket.ConnectAsync(Uri, stoppingToken);
     }
 
-    var buffer = JsonSerializer.SerializeToUtf8Bytes(message, _serializeOptions);
+    var buffer = JsonSerializer.SerializeToUtf8Bytes(message, BrowserMessageSerializationContext.Default.BrowserMessage);
     await _webSocket.SendAsync(buffer, WebSocketMessageType.Text, true, stoppingToken);
   }
 
@@ -178,7 +181,8 @@ internal sealed class Connection
   /// </summary>
   /// <param name="messageHandler"> The message handler</param>
   /// <param name="stoppingToken"> Token to stop the task</param>
-  public async ValueTask ReceiveAsync(Action<string, Memory<byte>> messageHandler, CancellationToken stoppingToken = default)
+  public async ValueTask ReceiveAsync(Action<string, Memory<byte>> messageHandler,
+    CancellationToken stoppingToken = default)
   {
     if (_webSocket.State != WebSocketState.Open)
     {

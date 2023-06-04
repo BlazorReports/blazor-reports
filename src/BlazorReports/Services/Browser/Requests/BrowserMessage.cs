@@ -21,3 +21,15 @@ internal class BrowserMessage(string Method)
   [JsonPropertyName("params")]
   public Dictionary<string, object> Parameters { get; } = new();
 }
+
+/// <summary>
+/// The serialization context for the PageGetFrameTreeResponse
+/// </summary>
+[JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
+[JsonSerializable(typeof(BrowserMessage))]
+[JsonSerializable(typeof(string))]
+[JsonSerializable(typeof(bool))]
+[JsonSerializable(typeof(double))]
+internal partial class BrowserMessageSerializationContext : JsonSerializerContext
+{
+}

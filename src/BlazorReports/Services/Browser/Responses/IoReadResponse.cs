@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace BlazorReports.Services.Browser.Responses;
 
 /// <summary>
@@ -13,3 +15,12 @@ public record IoReadResponse
   string Data,
   bool Eof
 );
+
+/// <summary>
+/// The serialization context for the IoReadResponse
+/// </summary>
+[JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
+[JsonSerializable(typeof(BrowserResultResponse<IoReadResponse>))]
+internal partial class IoReadResponseSerializationContext : JsonSerializerContext
+{
+}
