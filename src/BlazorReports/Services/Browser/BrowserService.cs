@@ -1,6 +1,8 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.IO.Pipelines;
 using System.Runtime.InteropServices;
+using BlazorReports.Models;
 using BlazorReports.Services.Browser.Helpers;
 using BlazorReports.Services.Browser.Requests;
 using BlazorReports.Services.Browser.Responses;
@@ -12,11 +14,30 @@ namespace BlazorReports.Services.Browser;
 /// </summary>
 public sealed class BrowserService
 {
+  private readonly Browsers _browser;
   private Connection? _connection;
-
   private readonly ConcurrentStack<BrowserPage> _browserPagePool = new();
 
-  internal async Task<BrowserPage> GetBrowserPage(CancellationToken stoppingToken = default)
+  /// <summary>
+  /// The connection to the browser
+  /// </summary>
+  /// <param name="browser"> The browser to use </param>
+  public BrowserService(Browsers browser)
+  {
+    _browser = browser;
+  }
+
+  internal async ValueTask PrintReportFromBrowser(PipeWriter pipeWriter, string html,
+    BlazorReportsPageSettings pageSettings, CancellationToken cancellationToken)
+  {
+    await StartBrowserHeadless(_browser);
+    var browserPage = await GetBrowserPage(cancellationToken);
+    await browserPage.DisplayHtml(html, cancellationToken);
+    await browserPage.ConvertPageToPdf(pipeWriter, pageSettings, cancellationToken);
+    _browserPagePool.Push(browserPage);
+  }
+
+  private async Task<BrowserPage> GetBrowserPage(CancellationToken stoppingToken = default)
   {
     if (_connection is null)
       throw new InvalidOperationException("Browser is not running");
@@ -29,7 +50,8 @@ public sealed class BrowserService
     var createTargetMessage = new BrowserMessage("Target.createTarget");
     createTargetMessage.Parameters.Add("url", "about:blank");
     // createTargetMessage.Parameters.Add("enableBeginFrameControl", true);
-    return await _connection.SendAsync<BrowserResultResponse<CreateTargetResponse>, BrowserPage>(createTargetMessage,
+    return await _connection.SendAsync<BrowserResultResponse<CreateTargetResponse>, BrowserPage>(
+      createTargetMessage, CreateTargetResponseSerializationContext.Default.BrowserResultResponseCreateTargetResponse,
       targetResponse =>
       {
         var pageUrl =
@@ -38,12 +60,7 @@ public sealed class BrowserService
       }, stoppingToken);
   }
 
-  internal void ReturnBrowserPage(BrowserPage browserPage)
-  {
-    _browserPagePool.Push(browserPage);
-  }
-
-  internal async Task StartBrowserHeadless(Browsers browsers)
+  private async Task StartBrowserHeadless(Browsers browsers)
   {
     if (_connection is not null) return;
 
@@ -149,7 +166,7 @@ public sealed class BrowserService
       EnableRaisingEvents = true
     };
 
-    var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));  // 10 second timeout
+    var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10)); // 10 second timeout
     var tcs = new TaskCompletionSource<string[]>();
 
     void CreatedHandler(object s, FileSystemEventArgs e)
@@ -163,25 +180,26 @@ public sealed class BrowserService
     // Register the CancellationToken's callback
     var callback = cts.Token.Register(() =>
     {
-      tcs.TrySetException(new TimeoutException($"A timeout of 10 seconds exceeded, the file '{devToolsActivePortFile}' did not exist"));
+      tcs.TrySetException(
+        new TimeoutException($"A timeout of 10 seconds exceeded, the file '{devToolsActivePortFile}' did not exist"));
     });
 
     // if the file already exists, immediately return the lines
     if (File.Exists(devToolsActivePortFile))
     {
       await callback.DisposeAsync(); // Dispose of callback to remove the createdHandler
-      watcher.Dispose();  // Dispose of the watcher
+      watcher.Dispose(); // Dispose of the watcher
       return await File.ReadAllLinesAsync(devToolsActivePortFile, cts.Token);
     }
 
     try
     {
-      return await tcs.Task;  // Wait for the file to be created or the timeout to occur
+      return await tcs.Task; // Wait for the file to be created or the timeout to occur
     }
     finally
     {
       await callback.DisposeAsync(); // Dispose of callback to remove the createdHandler
-      watcher.Dispose();  // Dispose of the watcher
+      watcher.Dispose(); // Dispose of the watcher
     }
   }
 
@@ -201,7 +219,7 @@ public sealed class BrowserService
         if (++retryCount == maxRetries)
           tcs.TrySetException(new IOException($"Unable to read file '{filePath}' after {maxRetries} attempts"));
         else
-          await Task.Delay(TimeSpan.FromMilliseconds(100 * retryCount));  // Exponential backoff
+          await Task.Delay(TimeSpan.FromMilliseconds(100 * retryCount)); // Exponential backoff
       }
       catch (Exception ex)
       {

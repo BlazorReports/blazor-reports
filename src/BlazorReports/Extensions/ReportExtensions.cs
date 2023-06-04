@@ -3,6 +3,7 @@ using BlazorReports.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
@@ -67,11 +68,13 @@ public static class ReportExtensions
     var blazorReport = reportRegistry.AddReport<T>(options);
 
     return endpoints.MapPost($"reports/{blazorReport.NormalizedName}",
-      async ([FromServices] IReportService reportService, CancellationToken token) =>
-      {
-        var report = await reportService.GenerateReport(blazorReport, token);
-        return Results.Stream(report, "application/pdf", $"{blazorReport.Name}.pdf");
-      });
+        async ([FromServices] IReportService reportService, HttpContext context, CancellationToken token) =>
+        {
+          context.Response.ContentType = "application/pdf";
+          context.Response.Headers.Append("Content-Disposition", $"attachment; filename=\"{blazorReport.Name}.pdf\"");
+          await reportService.GenerateReport(context.Response.BodyWriter, blazorReport, token);
+        })
+      .Produces<FileStreamHttpResult>(200, "application/pdf");
   }
 
   /// <summary>
@@ -91,10 +94,12 @@ public static class ReportExtensions
     var blazorReport = reportRegistry.AddReport<T, TD>(options);
 
     return endpoints.MapPost($"reports/{blazorReport.NormalizedName}",
-      async (TD data, [FromServices] IReportService reportService, CancellationToken token) =>
-      {
-        var report = await reportService.GenerateReport(blazorReport, data, token);
-        return Results.Stream(report, "application/pdf", $"{blazorReport.Name}.pdf");
-      });
+        async (TD data, [FromServices] IReportService reportService, HttpContext context, CancellationToken token) =>
+        {
+          context.Response.ContentType = "application/pdf";
+          context.Response.Headers.Append("Content-Disposition", $"attachment; filename=\"{blazorReport.Name}.pdf\"");
+          await reportService.GenerateReport(context.Response.BodyWriter, blazorReport, data, token);
+        })
+      .Produces<FileStreamHttpResult>(200, "application/pdf");
   }
 }

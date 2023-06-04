@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace BlazorReports.Services.Browser.Responses;
 
 /// <summary>
@@ -11,3 +13,12 @@ public record PagePrintToPdfResponse
   string Data,
   string Stream
 );
+
+/// <summary>
+/// The serialization context for the PagePrintToPdfResponse
+/// </summary>
+[JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
+[JsonSerializable(typeof(BrowserResultResponse<PagePrintToPdfResponse>))]
+internal partial class PagePrintToPdfResponseSerializationContext : JsonSerializerContext
+{
+}

@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace BlazorReports.Services.Browser.Responses;
 
 /// <summary>
@@ -9,3 +11,12 @@ public record CreateTargetResponse
 (
   string TargetId
 );
+
+/// <summary>
+/// The serialization context for the CreateTargetResponse
+/// </summary>
+[JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
+[JsonSerializable(typeof(BrowserResultResponse<CreateTargetResponse>))]
+internal partial class CreateTargetResponseSerializationContext : JsonSerializerContext
+{
+}

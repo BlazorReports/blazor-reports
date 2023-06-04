@@ -19,7 +19,7 @@ public sealed class BrowserPage
   /// <summary>
   /// Creates a new instance of the BrowserPage
   /// </summary>
-  /// <param name="uri"></param>
+  /// <param name="uri"> The uri of the page</param>
   public BrowserPage(Uri uri)
   {
     _connection = new Connection(uri);
@@ -43,7 +43,8 @@ public sealed class BrowserPage
     await _connection.SendAsync(cacheMessage, stoppingToken: stoppingToken);
 
     var getPageFrameTreeMessage = new BrowserMessage("Page.getFrameTree");
-    await _connection.SendAsync<BrowserResultResponse<PageGetFrameTreeResponse>>(getPageFrameTreeMessage,
+    await _connection.SendAsync(getPageFrameTreeMessage,
+      PageGetFrameTreeResponseSerializationContext.Default.BrowserResultResponsePageGetFrameTreeResponse,
       async response =>
       {
         var pageSetDocumentContentMessage = new BrowserMessage("Page.setDocumentContent");
@@ -53,13 +54,10 @@ public sealed class BrowserPage
       }, stoppingToken);
   }
 
-  internal (PipeReader PipeReader, ValueTask FillPipeTask) ConvertPageToPdf(BlazorReportsPageSettings pageSettings,
+  internal async ValueTask ConvertPageToPdf(PipeWriter pipeWriter, BlazorReportsPageSettings pageSettings,
     CancellationToken stoppingToken = default)
   {
-    var pipe = new Pipe();
-
-    // The reader as a stream can be returned and it will be populated as WriteToPipe executes.
-    return (pipe.Reader, WriteToPipe(pipe.Writer, pageSettings, stoppingToken));
+    await WriteToPipe(pipeWriter, pageSettings, stoppingToken);
   }
 
   private async ValueTask WriteToPipe(PipeWriter writer, BlazorReportsPageSettings pageSettings,
@@ -67,35 +65,39 @@ public sealed class BrowserPage
   {
     var message = CreatePrintToPdfBrowserMessage(pageSettings);
 
-    await _connection.SendAsync<BrowserResultResponse<PagePrintToPdfResponse>>(message, async pagePrintToPdfResponse =>
-    {
-      if (string.IsNullOrEmpty(pagePrintToPdfResponse.Result.Stream)) return;
-
-      var ioReadMessage = new BrowserMessage("IO.read");
-      ioReadMessage.Parameters.Add("handle", pagePrintToPdfResponse.Result.Stream);
-      ioReadMessage.Parameters.Add("size", 100 * 1024);
-
-      using var transform = new FromBase64Transform(FromBase64TransformMode.IgnoreWhiteSpaces);
-      var finished = false;
-      while (true)
+    await _connection.SendAsync(message,
+      PagePrintToPdfResponseSerializationContext.Default.BrowserResultResponsePagePrintToPdfResponse,
+      async pagePrintToPdfResponse =>
       {
-        if (finished) break;
-        await _connection.SendAsync<BrowserResultResponse<IoReadResponse>>(ioReadMessage, async ioReadResponse =>
+        if (string.IsNullOrEmpty(pagePrintToPdfResponse.Result.Stream)) return;
+
+        var ioReadMessage = new BrowserMessage("IO.read");
+        ioReadMessage.Parameters.Add("handle", pagePrintToPdfResponse.Result.Stream);
+        ioReadMessage.Parameters.Add("size", 100 * 1024);
+
+        using var transform = new FromBase64Transform(FromBase64TransformMode.IgnoreWhiteSpaces);
+        var finished = false;
+        while (true)
         {
-          if (ioReadResponse.Result.Eof)
-          {
-            await ClosePdfStream(pagePrintToPdfResponse.Result.Stream, stoppingToken);
-            finished = true;
-            return;
-          }
+          if (finished) break;
+          await _connection.SendAsync(ioReadMessage,
+            IoReadResponseSerializationContext.Default.BrowserResultResponseIoReadResponse,
+            async ioReadResponse =>
+            {
+              if (ioReadResponse.Result.Eof)
+              {
+                await ClosePdfStream(pagePrintToPdfResponse.Result.Stream, stoppingToken);
+                finished = true;
+                return;
+              }
 
-          await ReadAndTransform(ioReadResponse.Result.Data.AsMemory(), transform, writer, stoppingToken);
-        }, stoppingToken);
-      }
+              await ReadAndTransform(ioReadResponse.Result.Data.AsMemory(), transform, writer, stoppingToken);
+            }, stoppingToken);
+        }
 
-      // Notify the PipeReader that there is no more data to be written
-      await writer.CompleteAsync();
-    }, stoppingToken);
+        // Notify the PipeReader that there is no more data to be written
+        await writer.CompleteAsync();
+      }, stoppingToken);
   }
 
   private static BrowserMessage CreatePrintToPdfBrowserMessage(BlazorReportsPageSettings pageSettings)

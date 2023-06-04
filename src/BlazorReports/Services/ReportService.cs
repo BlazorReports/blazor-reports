@@ -15,7 +15,6 @@ namespace BlazorReports.Services;
 /// </summary>
 public sealed class ReportService : IReportService
 {
-  private readonly IOptions<BlazorReportsOptions> _options;
   private readonly IServiceProvider _serviceProvider;
   private readonly BlazorReportRegistry _reportRegistry;
   private readonly BrowserService _browserService;
@@ -32,21 +31,22 @@ public sealed class ReportService : IReportService
     BlazorReportRegistry reportRegistry
   )
   {
-    _options = options;
     _serviceProvider = serviceProvider;
     _reportRegistry = reportRegistry;
-    _browserService = new BrowserService();
+    _browserService = new BrowserService(options.Value.Browser);
   }
 
   /// <summary>
   /// Generates a report using the specified component and data
   /// </summary>
+  /// <param name="pipeWriter"> The pipe writer to write the report to </param>
   /// <param name="data"> The data to use in the report </param>
   /// <param name="cancellationToken"> The cancellation token </param>
   /// <typeparam name="T"> The component to use in the report </typeparam>
   /// <typeparam name="TD"> The type of data to use in the report </typeparam>
   /// <returns> The generated report </returns>
-  public async Task<PipeReader> GenerateReport<T, TD>(TD data, CancellationToken cancellationToken = default)
+  public async ValueTask GenerateReport<T, TD>(PipeWriter pipeWriter, TD data,
+    CancellationToken cancellationToken = default)
     where T : ComponentBase where TD : class
   {
     using var scope = _serviceProvider.CreateScope();
@@ -73,29 +73,20 @@ public sealed class ReportService : IReportService
       return output.ToHtmlString();
     });
 
-    await _browserService.StartBrowserHeadless(_options.Value.Browser);
-    var browserPage = await _browserService.GetBrowserPage(cancellationToken);
-    await browserPage.DisplayHtml(html, cancellationToken);
-
-    var reportPdfConvertResult = browserPage.ConvertPageToPdf(_reportRegistry.DefaultPageSettings, cancellationToken);
-    _ = Task.Run(async () => // running writing to the pipe in background
-    {
-      await reportPdfConvertResult.FillPipeTask;
-      _browserService.ReturnBrowserPage(browserPage);
-    }, cancellationToken);
-
-    return reportPdfConvertResult.PipeReader;
+    await _browserService.PrintReportFromBrowser(pipeWriter, html, _reportRegistry.DefaultPageSettings, cancellationToken);
   }
 
   /// <summary>
   /// Generates a report using the specified component and data
   /// </summary>
+  /// <param name="pipeWriter"> The pipe writer to write the report to </param>
   /// <param name="blazorReport"> The report to generate </param>
   /// <param name="data"> The data to use in the report </param>
   /// <param name="cancellationToken"> The cancellation token </param>
   /// <typeparam name="T"> The type of data to use in the report </typeparam>
   /// <returns> The generated report </returns>
-  public async Task<PipeReader> GenerateReport<T>(BlazorReport blazorReport, T? data, CancellationToken cancellationToken = default) where T : class
+  public async ValueTask GenerateReport<T>(PipeWriter pipeWriter, BlazorReport blazorReport, T? data,
+    CancellationToken cancellationToken = default) where T : class
   {
     using var scope = _serviceProvider.CreateScope();
     var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
@@ -162,29 +153,20 @@ public sealed class ReportService : IReportService
 
     var pageSettings = blazorReport.PageSettings ?? _reportRegistry.DefaultPageSettings;
 
-    await _browserService.StartBrowserHeadless(_options.Value.Browser);
-    var browserPage = await _browserService.GetBrowserPage(cancellationToken);
-    await browserPage.DisplayHtml(html, cancellationToken);
-
-    var reportPdfConvertResult = browserPage.ConvertPageToPdf(pageSettings, cancellationToken);
-    _ = Task.Run(async () => // running writing to the pipe in background
-    {
-      await reportPdfConvertResult.FillPipeTask;
-      _browserService.ReturnBrowserPage(browserPage);
-    }, cancellationToken);
-
-    return reportPdfConvertResult.PipeReader;
+    await _browserService.PrintReportFromBrowser(pipeWriter, html, pageSettings, cancellationToken);
   }
 
   /// <summary>
   /// Generates a report using the specified component
   /// </summary>
+  /// <param name="pipeWriter"> The pipe writer to write the report to </param>
   /// <param name="blazorReport"> The report to generate </param>
   /// <param name="cancellationToken"> The cancellation token </param>
   /// <returns> The generated report </returns>
-  public async Task<PipeReader> GenerateReport(BlazorReport blazorReport, CancellationToken cancellationToken = default)
+  public ValueTask GenerateReport(PipeWriter pipeWriter, BlazorReport blazorReport,
+    CancellationToken cancellationToken = default)
   {
-    return await GenerateReport<object>(blazorReport, null, cancellationToken);
+    return GenerateReport<object>(pipeWriter, blazorReport, null, cancellationToken);
   }
 
   /// <summary>
