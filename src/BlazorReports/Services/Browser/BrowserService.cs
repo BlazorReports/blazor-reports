@@ -18,6 +18,7 @@ public sealed class BrowserService : IDisposable
   private Process? _chromiumProcess;
   private Connection? _connection;
   private readonly ConcurrentStack<BrowserPage> _browserPagePool = new();
+  private static DirectoryInfo? _devToolsActivePortDirectory;
 
   /// <summary>
   /// The connection to the browser
@@ -70,9 +71,10 @@ public sealed class BrowserService : IDisposable
     if (!File.Exists(chromiumExeFileName))
       throw new FileNotFoundException($"Could not find browser in location '{chromiumExeFileName}'");
 
-    var currentPath = Directory.GetCurrentDirectory();
-    var devToolsDirectory = Path.Combine(currentPath, "browser-dev-tools");
+    var temporaryPath = Path.GetTempPath();
+    var devToolsDirectory = Path.Combine(temporaryPath, Guid.NewGuid().ToString());
     Directory.CreateDirectory(devToolsDirectory);
+    _devToolsActivePortDirectory = new DirectoryInfo(devToolsDirectory);
     var devToolsActivePortFile = Path.Combine(devToolsDirectory, "DevToolsActivePort");
 
     if (File.Exists(devToolsActivePortFile))
@@ -156,13 +158,12 @@ public sealed class BrowserService : IDisposable
 
   private static async Task<string[]> ReadDevToolsActiveFile(string devToolsActivePortFile)
   {
-    var directoryName = Path.GetDirectoryName(devToolsActivePortFile);
-    if (directoryName is null)
-      throw new Exception($"Could not get directory name from '{devToolsActivePortFile}'");
+    if (_devToolsActivePortDirectory is null || !_devToolsActivePortDirectory.Exists)
+      throw new Exception($"The {nameof(_devToolsActivePortDirectory)} is null");
 
     var watcher = new FileSystemWatcher
     {
-      Path = directoryName,
+      Path = _devToolsActivePortDirectory.FullName,
       Filter = Path.GetFileName(devToolsActivePortFile),
       EnableRaisingEvents = true
     };
@@ -240,9 +241,7 @@ public sealed class BrowserService : IDisposable
     _connection?.Dispose();
     foreach (var browserPage in _browserPagePool)
       browserPage.Dispose();
-
-    var currentPath = Directory.GetCurrentDirectory();
-    var devToolsDirectory = Path.Combine(currentPath, "browser-dev-tools");
-    Directory.Delete(devToolsDirectory, true);
+    if (_devToolsActivePortDirectory is not null && _devToolsActivePortDirectory.Exists)
+      Directory.Delete(_devToolsActivePortDirectory.FullName, true);
   }
 }
