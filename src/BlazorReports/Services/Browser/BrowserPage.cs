@@ -37,23 +37,10 @@ public sealed class BrowserPage
     if (string.IsNullOrWhiteSpace(html))
       throw new ArgumentException("Value cannot be null or whitespace.", nameof(html));
 
-    // var pageNavigateMessage = new BrowserMessage("Page.navigate");
-    // pageNavigateMessage.Parameters.Add("url", $"data:text/html,{html}");
-    // await _connection.SendAsync(pageNavigateMessage, stoppingToken: stoppingToken);
-
     // Enables or disables the cache
     var cacheMessage = new BrowserMessage("Network.setCacheDisabled");
     cacheMessage.Parameters.Add("cacheDisabled", false);
     await _connection.SendAsync(cacheMessage, stoppingToken: stoppingToken);
-
-    // Enables page domain notifications
-    var pageEnableMessage = new BrowserMessage("Page.enable");
-    await _connection.SendAsync(pageEnableMessage, stoppingToken: stoppingToken);
-
-    // Enables network domain notifications
-    var setLifecycleEventsEnabledMessage = new BrowserMessage("Page.setLifecycleEventsEnabled");
-    setLifecycleEventsEnabledMessage.Parameters.Add("enabled", true);
-    await _connection.SendAsync(setLifecycleEventsEnabledMessage, stoppingToken: stoppingToken);
 
     var getPageFrameTreeMessage = new BrowserMessage("Page.getFrameTree");
     await _connection.SendAsync<BrowserResultResponse<PageGetFrameTreeResponse>>(getPageFrameTreeMessage,
@@ -63,32 +50,19 @@ public sealed class BrowserPage
         pageSetDocumentContentMessage.Parameters.Add("frameId", response.Result.FrameTree.Frame.Id);
         pageSetDocumentContentMessage.Parameters.Add("html", html);
         await _connection.SendAsync(pageSetDocumentContentMessage, stoppingToken: stoppingToken);
-
-        setLifecycleEventsEnabledMessage.Parameters.Clear();
-        setLifecycleEventsEnabledMessage.Parameters.Add("enabled", false);
-        await _connection.SendAsync(setLifecycleEventsEnabledMessage, stoppingToken: stoppingToken);
-
-        // Disables page domain notifications
-        var pageDisableMessage = new BrowserMessage("Page.disable");
-        await _connection.SendAsync(pageDisableMessage, stoppingToken: stoppingToken);
       }, stoppingToken);
   }
 
-  internal PipeReader ConvertPageToPdf(BlazorReportsPageSettings pageSettings,
+  internal (PipeReader PipeReader, ValueTask FillPipeTask) ConvertPageToPdf(BlazorReportsPageSettings pageSettings,
     CancellationToken stoppingToken = default)
   {
     var pipe = new Pipe();
 
-    _ = Task.Run(async () => // running writing to the pipe in background
-    {
-      await WriteToPipe(pipe.Writer, pageSettings, stoppingToken);
-    }, stoppingToken);
-
     // The reader as a stream can be returned and it will be populated as WriteToPipe executes.
-    return pipe.Reader;
+    return (pipe.Reader, WriteToPipe(pipe.Writer, pageSettings, stoppingToken));
   }
 
-  private async Task WriteToPipe(PipeWriter writer, BlazorReportsPageSettings pageSettings,
+  private async ValueTask WriteToPipe(PipeWriter writer, BlazorReportsPageSettings pageSettings,
     CancellationToken stoppingToken = default)
   {
     var message = CreatePrintToPdfBrowserMessage(pageSettings);
@@ -99,7 +73,7 @@ public sealed class BrowserPage
 
       var ioReadMessage = new BrowserMessage("IO.read");
       ioReadMessage.Parameters.Add("handle", pagePrintToPdfResponse.Result.Stream);
-      ioReadMessage.Parameters.Add("size", 200 * 1024);
+      ioReadMessage.Parameters.Add("size", 100 * 1024);
 
       using var transform = new FromBase64Transform(FromBase64TransformMode.IgnoreWhiteSpaces);
       var finished = false;
@@ -139,7 +113,7 @@ public sealed class BrowserPage
     return message;
   }
 
-  private static async Task ReadAndTransform(ReadOnlyMemory<char> data, FromBase64Transform transform,
+  private static async ValueTask ReadAndTransform(ReadOnlyMemory<char> data, FromBase64Transform transform,
     PipeWriter writer, CancellationToken stoppingToken)
   {
     if (data.Length == 0)
@@ -154,15 +128,16 @@ public sealed class BrowserPage
       var totalBytes = Encoding.UTF8.GetBytes(data.Span, dataBytes);
       var index = 0;
       var buffer = writer.GetMemory(transform.OutputBlockSize);
+      var dataBytesSpan = dataBytes.AsMemory();
 
       while (index < totalBytes)
       {
         stoppingToken.ThrowIfCancellationRequested();
         var bytesRead = Math.Min(totalBytes - index, transform.InputBlockSize);
-        var inputBlockMemory = new Memory<byte>(dataBytes, index, bytesRead);
+        var inputBlockMemory = dataBytesSpan.Slice(index, bytesRead);
         index += bytesRead;
 
-        var count = transform.TransformBlock(inputBlockMemory.Span.ToArray(), 0, bytesRead, output, 0);
+        var count = transform.TransformBlock(inputBlockMemory.ToArray(), 0, bytesRead, output, 0);
         output.AsSpan(0, count).CopyTo(buffer.Span);
 
         writer.Advance(count);
@@ -180,42 +155,10 @@ public sealed class BrowserPage
     }
   }
 
-  private static async Task ReadAndTransformV2(ReadOnlyMemory<char> data, FromBase64Transform transform,
-    PipeWriter writer, CancellationToken stoppingToken)
-  {
-    if (data.Length == 0)
-      return;
-    var sharedPool = ArrayPool<byte>.Shared;
-    var dataBytes = sharedPool.Rent(data.Length);
-
-    try
-    {
-      Convert.TryFromBase64Chars(data.Span, dataBytes, out var bytesWritten);
-      var buffer = writer.GetMemory(bytesWritten);
-      dataBytes.AsSpan(0, bytesWritten).CopyTo(buffer.Span);
-      writer.Advance(bytesWritten);
-
-      await writer.FlushAsync(stoppingToken);
-    }
-    finally
-    {
-      sharedPool.Return(dataBytes);
-    }
-  }
-
-  private async Task ClosePdfStream(string stream, CancellationToken stoppingToken)
+  private async ValueTask ClosePdfStream(string stream, CancellationToken stoppingToken)
   {
     var ioCloseMessage = new BrowserMessage("IO.close");
     ioCloseMessage.Parameters.Add("handle", stream);
     await _connection.SendAsync(ioCloseMessage, stoppingToken: stoppingToken);
-  }
-
-  /// <summary>
-  /// Closes the connection to the browser
-  /// </summary>
-  /// <returns></returns>
-  public ValueTask CloseConnection()
-  {
-    return _connection.CloseAsync();
   }
 }
