@@ -1,3 +1,4 @@
+using System.IO.Pipelines;
 using BlazorReports.Components;
 using BlazorReports.Models;
 using BlazorReports.Services.Browser;
@@ -12,7 +13,7 @@ namespace BlazorReports.Services;
 /// <summary>
 /// Service for generating reports
 /// </summary>
-public class ReportService : IReportService
+public sealed class ReportService : IReportService
 {
   private readonly IOptions<BlazorReportsOptions> _options;
   private readonly IServiceProvider _serviceProvider;
@@ -41,10 +42,12 @@ public class ReportService : IReportService
   /// Generates a report using the specified component and data
   /// </summary>
   /// <param name="data"> The data to use in the report </param>
+  /// <param name="cancellationToken"> The cancellation token </param>
   /// <typeparam name="T"> The component to use in the report </typeparam>
   /// <typeparam name="TD"> The type of data to use in the report </typeparam>
   /// <returns> The generated report </returns>
-  public async Task<MemoryStream> GenerateReport<T, TD>(TD data) where T : ComponentBase where TD : class
+  public async Task<PipeReader> GenerateReport<T, TD>(TD data, CancellationToken cancellationToken = default)
+    where T : ComponentBase where TD : class
   {
     using var scope = _serviceProvider.CreateScope();
     var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
@@ -70,13 +73,18 @@ public class ReportService : IReportService
       return output.ToHtmlString();
     });
 
-    var reportStream = new MemoryStream();
     await _browserService.StartBrowserHeadless(_options.Value.Browser);
-    var browserPage = await _browserService.GetBrowserPage();
-    await browserPage.DisplayHtml(html);
-    await browserPage.ConvertPageToPdf(reportStream, _reportRegistry.DefaultPageSettings);
-    _browserService.ReturnBrowserPage(browserPage);
-    return reportStream;
+    var browserPage = await _browserService.GetBrowserPage(cancellationToken);
+    await browserPage.DisplayHtml(html, cancellationToken);
+
+    var reportPdfConvertResult = browserPage.ConvertPageToPdf(_reportRegistry.DefaultPageSettings, cancellationToken);
+    _ = Task.Run(async () => // running writing to the pipe in background
+    {
+      await reportPdfConvertResult.FillPipeTask;
+      _browserService.ReturnBrowserPage(browserPage);
+    }, cancellationToken);
+
+    return reportPdfConvertResult.PipeReader;
   }
 
   /// <summary>
@@ -84,9 +92,10 @@ public class ReportService : IReportService
   /// </summary>
   /// <param name="blazorReport"> The report to generate </param>
   /// <param name="data"> The data to use in the report </param>
+  /// <param name="cancellationToken"> The cancellation token </param>
   /// <typeparam name="T"> The type of data to use in the report </typeparam>
   /// <returns> The generated report </returns>
-  public async Task<MemoryStream> GenerateReport<T>(BlazorReport blazorReport, T? data) where T : class
+  public async Task<PipeReader> GenerateReport<T>(BlazorReport blazorReport, T? data, CancellationToken cancellationToken = default) where T : class
   {
     using var scope = _serviceProvider.CreateScope();
     var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
@@ -99,7 +108,7 @@ public class ReportService : IReportService
 
     if (!string.IsNullOrEmpty(blazorReport.BaseStylesPath))
     {
-      baseStyles = await File.ReadAllTextAsync(blazorReport.BaseStylesPath);
+      baseStyles = await File.ReadAllTextAsync(blazorReport.BaseStylesPath, cancellationToken);
     }
 
     var reportAssets = new Dictionary<string, string>();
@@ -111,7 +120,7 @@ public class ReportService : IReportService
       {
         foreach (var file in assetsDirectory.GetFiles())
         {
-          var fileBytes = await File.ReadAllBytesAsync(file.FullName);
+          var fileBytes = await File.ReadAllBytesAsync(file.FullName, cancellationToken);
           var base64Uri = $"data:image/webp;base64,{Convert.ToBase64String(fileBytes)}";
           reportAssets.Add(file.Name, base64Uri);
         }
@@ -153,23 +162,29 @@ public class ReportService : IReportService
 
     var pageSettings = blazorReport.PageSettings ?? _reportRegistry.DefaultPageSettings;
 
-    var reportStream = new MemoryStream();
     await _browserService.StartBrowserHeadless(_options.Value.Browser);
-    var browserPage = await _browserService.GetBrowserPage();
-    await browserPage.DisplayHtml(html);
-    await browserPage.ConvertPageToPdf(reportStream, pageSettings);
-    _browserService.ReturnBrowserPage(browserPage);
-    return reportStream;
+    var browserPage = await _browserService.GetBrowserPage(cancellationToken);
+    await browserPage.DisplayHtml(html, cancellationToken);
+
+    var reportPdfConvertResult = browserPage.ConvertPageToPdf(pageSettings, cancellationToken);
+    _ = Task.Run(async () => // running writing to the pipe in background
+    {
+      await reportPdfConvertResult.FillPipeTask;
+      _browserService.ReturnBrowserPage(browserPage);
+    }, cancellationToken);
+
+    return reportPdfConvertResult.PipeReader;
   }
 
   /// <summary>
   /// Generates a report using the specified component
   /// </summary>
   /// <param name="blazorReport"> The report to generate </param>
+  /// <param name="cancellationToken"> The cancellation token </param>
   /// <returns> The generated report </returns>
-  public async Task<MemoryStream> GenerateReport(BlazorReport blazorReport)
+  public async Task<PipeReader> GenerateReport(BlazorReport blazorReport, CancellationToken cancellationToken = default)
   {
-    return await GenerateReport<object>(blazorReport, null);
+    return await GenerateReport<object>(blazorReport, null, cancellationToken);
   }
 
   /// <summary>

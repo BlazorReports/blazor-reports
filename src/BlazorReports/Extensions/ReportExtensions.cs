@@ -67,10 +67,10 @@ public static class ReportExtensions
     var blazorReport = reportRegistry.AddReport<T>(options);
 
     return endpoints.MapPost($"reports/{blazorReport.NormalizedName}",
-      async ([FromServices] IReportService reportService) =>
+      async ([FromServices] IReportService reportService, CancellationToken token) =>
       {
-        using var report = await reportService.GenerateReport(blazorReport);
-        return Results.File(report.ToArray(), "application/pdf", $"{blazorReport.Name}.pdf");
+        var report = await reportService.GenerateReport(blazorReport, token);
+        return Results.Stream(report, "application/pdf", $"{blazorReport.Name}.pdf");
       });
   }
 
@@ -91,10 +91,10 @@ public static class ReportExtensions
     var blazorReport = reportRegistry.AddReport<T, TD>(options);
 
     return endpoints.MapPost($"reports/{blazorReport.NormalizedName}",
-      async (TD data, [FromServices] IReportService reportService) =>
+      async (TD data, [FromServices] IReportService reportService, CancellationToken token) =>
       {
-        using var report = await reportService.GenerateReport(blazorReport, data);
-        return Results.File(report.ToArray(), "application/pdf", $"{blazorReport.Name}.pdf");
+        var report = await reportService.GenerateReport(blazorReport, data, token);
+        return Results.Stream(report, "application/pdf", $"{blazorReport.Name}.pdf");
       });
   }
 }
