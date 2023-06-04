@@ -56,7 +56,8 @@ internal sealed class Connection : IDisposable
     CancellationToken stoppingToken = default
   )
   {
-    message.Id = ++_lastMessageId;
+    message.Id = Interlocked.Increment(ref _lastMessageId);
+
     if (_webSocket.State != WebSocketState.Open)
     {
       await _webSocket.ConnectAsync(Uri, stoppingToken);
@@ -115,7 +116,7 @@ internal sealed class Connection : IDisposable
     Func<T, Task> responseHandler,
     CancellationToken stoppingToken = default)
   {
-    message.Id = ++_lastMessageId;
+    message.Id = Interlocked.Increment(ref _lastMessageId);
     if (_webSocket.State != WebSocketState.Open)
     {
       await _webSocket.ConnectAsync(Uri, stoppingToken);
@@ -166,7 +167,7 @@ internal sealed class Connection : IDisposable
   /// <param name="stoppingToken"> Token to stop the task</param>
   public async ValueTask SendAsync(BrowserMessage message, CancellationToken stoppingToken = default)
   {
-    message.Id = ++_lastMessageId;
+    message.Id = Interlocked.Increment(ref _lastMessageId);
     if (_webSocket.State != WebSocketState.Open)
     {
       await _webSocket.ConnectAsync(Uri, stoppingToken);
