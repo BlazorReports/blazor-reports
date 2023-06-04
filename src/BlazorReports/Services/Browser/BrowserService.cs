@@ -12,7 +12,7 @@ namespace BlazorReports.Services.Browser;
 /// <summary>
 /// Represents a connection to the browser
 /// </summary>
-public sealed class BrowserService
+public sealed class BrowserService : IDisposable
 {
   private readonly Browsers _browser;
   private Connection? _connection;
@@ -227,5 +227,18 @@ public sealed class BrowserService
         break;
       }
     }
+  }
+
+  /// <summary>
+  /// Disposes of the browser service
+  /// </summary>
+  public void Dispose()
+  {
+    foreach (var browserPage in _browserPagePool)
+      browserPage.Dispose();
+
+    var currentPath = Directory.GetCurrentDirectory();
+    var devToolsDirectory = Path.Combine(currentPath, "browser-dev-tools");
+    Directory.Delete(devToolsDirectory, true);
   }
 }

@@ -12,9 +12,10 @@ namespace BlazorReports.Services.Browser;
 /// <summary>
 /// Represents a page in the browser
 /// </summary>
-public sealed class BrowserPage
+public sealed class BrowserPage : IDisposable
 {
   private readonly Connection _connection;
+  private static readonly CustomFromBase64Transform Transform = new(FromBase64TransformMode.IgnoreWhiteSpaces);
 
   /// <summary>
   /// Creates a new instance of the BrowserPage
@@ -57,12 +58,6 @@ public sealed class BrowserPage
   internal async ValueTask ConvertPageToPdf(PipeWriter pipeWriter, BlazorReportsPageSettings pageSettings,
     CancellationToken stoppingToken = default)
   {
-    await WriteToPipe(pipeWriter, pageSettings, stoppingToken);
-  }
-
-  private async ValueTask WriteToPipe(PipeWriter writer, BlazorReportsPageSettings pageSettings,
-    CancellationToken stoppingToken = default)
-  {
     var message = CreatePrintToPdfBrowserMessage(pageSettings);
 
     await _connection.SendAsync(message,
@@ -73,9 +68,8 @@ public sealed class BrowserPage
 
         var ioReadMessage = new BrowserMessage("IO.read");
         ioReadMessage.Parameters.Add("handle", pagePrintToPdfResponse.Result.Stream);
-        ioReadMessage.Parameters.Add("size", 100 * 1024);
+        ioReadMessage.Parameters.Add("size", 50 * 1024);
 
-        using var transform = new FromBase64Transform(FromBase64TransformMode.IgnoreWhiteSpaces);
         var finished = false;
         while (true)
         {
@@ -91,12 +85,12 @@ public sealed class BrowserPage
                 return;
               }
 
-              await ReadAndTransform(ioReadResponse.Result.Data.AsMemory(), transform, writer, stoppingToken);
+              await ReadAndTransform(ioReadResponse.Result.Data.AsMemory(), pipeWriter, stoppingToken);
             }, stoppingToken);
         }
 
         // Notify the PipeReader that there is no more data to be written
-        await writer.CompleteAsync();
+        await pipeWriter.CompleteAsync();
       }, stoppingToken);
   }
 
@@ -115,45 +109,42 @@ public sealed class BrowserPage
     return message;
   }
 
-  private static async ValueTask ReadAndTransform(ReadOnlyMemory<char> data, FromBase64Transform transform,
-    PipeWriter writer, CancellationToken stoppingToken)
+  private static async ValueTask ReadAndTransform(ReadOnlyMemory<char> data, PipeWriter writer,
+    CancellationToken stoppingToken)
   {
     if (data.Length == 0)
       return;
     var sharedPool = ArrayPool<byte>.Shared;
     var dataBytes = sharedPool.Rent(data.Length);
-    var inputBlock = sharedPool.Rent(transform.InputBlockSize);
-    var output = sharedPool.Rent(transform.OutputBlockSize);
+    var inputBlock = sharedPool.Rent(CustomFromBase64Transform.InputBlockSize);
 
     try
     {
       var totalBytes = Encoding.UTF8.GetBytes(data.Span, dataBytes);
       var index = 0;
-      var buffer = writer.GetMemory(transform.OutputBlockSize);
+      var writerBuffer = writer.GetMemory(CustomFromBase64Transform.OutputBlockSize);
       var dataBytesSpan = dataBytes.AsMemory();
 
       while (index < totalBytes)
       {
         stoppingToken.ThrowIfCancellationRequested();
-        var bytesRead = Math.Min(totalBytes - index, transform.InputBlockSize);
+        var bytesRead = Math.Min(totalBytes - index, CustomFromBase64Transform.InputBlockSize);
         var inputBlockMemory = dataBytesSpan.Slice(index, bytesRead);
         index += bytesRead;
 
-        var count = transform.TransformBlock(inputBlockMemory.ToArray(), 0, bytesRead, output, 0);
-        output.AsSpan(0, count).CopyTo(buffer.Span);
-
+        var count = Transform.TransformBlock(inputBlockMemory.Span, 0, bytesRead, writerBuffer.Span, 0);
         writer.Advance(count);
         var flushResult = await writer.FlushAsync(stoppingToken);
         if (flushResult.IsCanceled || flushResult.IsCompleted)
           break;
-        buffer = writer.GetMemory(count); // Get a new buffer after advancing
+        writerBuffer = writer.GetMemory(count); // Get a new buffer after advancing
       }
     }
     finally
     {
       sharedPool.Return(dataBytes);
       sharedPool.Return(inputBlock);
-      sharedPool.Return(output);
+      Transform.Reset();
     }
   }
 
@@ -162,5 +153,13 @@ public sealed class BrowserPage
     var ioCloseMessage = new BrowserMessage("IO.close");
     ioCloseMessage.Parameters.Add("handle", stream);
     await _connection.SendAsync(ioCloseMessage, stoppingToken: stoppingToken);
+  }
+
+  /// <summary>
+  /// Disposes the BrowserPage
+  /// </summary>
+  public void Dispose()
+  {
+    Transform.Dispose();
   }
 }

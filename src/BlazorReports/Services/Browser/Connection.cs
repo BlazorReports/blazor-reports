@@ -14,7 +14,7 @@ internal sealed class Connection
   private int _lastMessageId;
   private readonly ClientWebSocket _webSocket;
   private readonly ArrayPool<byte> _bufferPool = ArrayPool<byte>.Shared;
-  private const int BufferSize = 200 * 1024;
+  private const int BufferSize = 100 * 1024;
 
   /// <summary>
   /// The uri of the connection
@@ -95,10 +95,10 @@ internal sealed class Connection
       if (parsedMessage is null)
         throw new Exception("Could not deserialize response");
 
-      _bufferPool.Return(bufferToReceive);
 
       return await responseHandler(parsedMessage);
     }
+    _bufferPool.Return(bufferToReceive);
 
     return default!;
   }
@@ -153,10 +153,10 @@ internal sealed class Connection
       if (parsedMessage is null)
         throw new Exception("Could not deserialize response");
 
-      _bufferPool.Return(bufferToReceive);
       await responseHandler(parsedMessage);
       break;
     }
+    _bufferPool.Return(bufferToReceive);
   }
 
   /// <summary>
@@ -174,47 +174,6 @@ internal sealed class Connection
 
     var buffer = JsonSerializer.SerializeToUtf8Bytes(message, BrowserMessageSerializationContext.Default.BrowserMessage);
     await _webSocket.SendAsync(buffer, WebSocketMessageType.Text, true, stoppingToken);
-  }
-
-  /// <summary>
-  /// Receives a message from the browser
-  /// </summary>
-  /// <param name="messageHandler"> The message handler</param>
-  /// <param name="stoppingToken"> Token to stop the task</param>
-  public async ValueTask ReceiveAsync(Action<string, Memory<byte>> messageHandler,
-    CancellationToken stoppingToken = default)
-  {
-    if (_webSocket.State != WebSocketState.Open)
-    {
-      await _webSocket.ConnectAsync(Uri, CancellationToken.None);
-    }
-
-    var buffer = new Memory<byte>(new byte[BufferSize]);
-
-    while (_webSocket.State == WebSocketState.Open)
-    {
-      if (stoppingToken.IsCancellationRequested)
-      {
-        break;
-      }
-
-      var result = await _webSocket.ReceiveAsync(buffer, stoppingToken);
-
-      if (result.MessageType == WebSocketMessageType.Close)
-      {
-        await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "", stoppingToken);
-        break;
-      }
-
-      var message = buffer[..result.Count];
-      var jsonDoc = JsonDocument.Parse(message);
-      var root = jsonDoc.RootElement;
-      if (root.TryGetProperty("method", out var methodElement))
-      {
-        var method = methodElement.GetString() ?? string.Empty;
-        messageHandler(method, buffer[..result.Count]);
-      }
-    }
   }
 
   /// <summary>
