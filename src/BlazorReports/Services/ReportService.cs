@@ -13,7 +13,7 @@ namespace BlazorReports.Services;
 /// <summary>
 /// Service for generating reports
 /// </summary>
-public sealed class ReportService : IReportService
+public sealed class ReportService : IReportService, IDisposable
 {
   private readonly IServiceProvider _serviceProvider;
   private readonly BlazorReportRegistry _reportRegistry;
@@ -179,5 +179,13 @@ public sealed class ReportService : IReportService
     var reportNormalizedName = name.ToLowerInvariant().Trim();
     var foundReport = _reportRegistry.Reports.TryGetValue(reportNormalizedName, out var report);
     return foundReport ? report : null;
+  }
+
+  /// <summary>
+  /// Disposes the blazor report service
+  /// </summary>
+  public void Dispose()
+  {
+    _browserService.Dispose();
   }
 }
