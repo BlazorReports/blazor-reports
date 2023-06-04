@@ -15,6 +15,7 @@ namespace BlazorReports.Services.Browser;
 public sealed class BrowserService : IDisposable
 {
   private readonly Browsers _browser;
+  private Process? _chromiumProcess;
   private Connection? _connection;
   private readonly ConcurrentStack<BrowserPage> _browserPagePool = new();
 
@@ -77,10 +78,10 @@ public sealed class BrowserService : IDisposable
     if (File.Exists(devToolsActivePortFile))
       File.Delete(devToolsActivePortFile);
 
-    var chromiumProcess = CreateChromiumProcess(chromiumExeFileName, devToolsDirectory);
+    _chromiumProcess = CreateChromiumProcess(chromiumExeFileName, devToolsDirectory);
     try
     {
-      var started = chromiumProcess.Start();
+      var started = _chromiumProcess.Start();
       if (!started)
         throw new Exception("Could not start browser process");
     }
@@ -234,6 +235,8 @@ public sealed class BrowserService : IDisposable
   /// </summary>
   public void Dispose()
   {
+    _chromiumProcess?.Kill();
+    _chromiumProcess?.Dispose();
     _connection?.Dispose();
     foreach (var browserPage in _browserPagePool)
       browserPage.Dispose();
