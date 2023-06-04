@@ -234,6 +234,7 @@ public sealed class BrowserService : IDisposable
   /// </summary>
   public void Dispose()
   {
+    _connection?.Dispose();
     foreach (var browserPage in _browserPagePool)
       browserPage.Dispose();
 
