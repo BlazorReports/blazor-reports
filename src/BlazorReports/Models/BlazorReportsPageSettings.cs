@@ -41,4 +41,9 @@ public class BlazorReportsPageSettings
   /// Paper height in inches. Defaults to 8.5 inches.
   /// </summary>
   public double PaperWidth { get; set; } = 8.5;
+
+  /// <summary>
+  /// Whether to ignore the background of the page. Defaults to false.
+  /// </summary>
+  public bool IgnoreBackground { get; set; }
 }

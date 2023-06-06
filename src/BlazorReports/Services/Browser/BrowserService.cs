@@ -39,7 +39,7 @@ public sealed class BrowserService : IDisposable
     _browserPagePool.Push(browserPage);
   }
 
-  private async Task<BrowserPage> GetBrowserPage(CancellationToken stoppingToken = default)
+  private async ValueTask<BrowserPage> GetBrowserPage(CancellationToken stoppingToken = default)
   {
     if (_connection is null)
       throw new InvalidOperationException("Browser is not running");
@@ -62,7 +62,7 @@ public sealed class BrowserService : IDisposable
       }, stoppingToken);
   }
 
-  private async Task StartBrowserHeadless(Browsers browsers)
+  private async ValueTask StartBrowserHeadless(Browsers browsers)
   {
     if (_connection is not null) return;
 
@@ -156,7 +156,7 @@ public sealed class BrowserService : IDisposable
     Console.WriteLine(exception);
   }
 
-  private static async Task<string[]> ReadDevToolsActiveFile(string devToolsActivePortFile)
+  private static async ValueTask<string[]> ReadDevToolsActiveFile(string devToolsActivePortFile)
   {
     if (_devToolsActivePortDirectory is null || !_devToolsActivePortDirectory.Exists)
       throw new Exception($"The {nameof(_devToolsActivePortDirectory)} is null");

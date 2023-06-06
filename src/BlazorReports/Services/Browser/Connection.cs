@@ -163,7 +163,7 @@ internal sealed class Connection : IDisposable
   /// <summary>
   /// Sends a message to the browser
   /// </summary>
-  /// <param name="message"></param>
+  /// <param name="message"> The message to send</param>
   /// <param name="stoppingToken"> Token to stop the task</param>
   public async ValueTask SendAsync(BrowserMessage message, CancellationToken stoppingToken = default)
   {
