@@ -104,6 +104,7 @@ public sealed class BrowserPage : IDisposable
     message.Parameters.Add("marginBottom", pageSettings.MarginBottom);
     message.Parameters.Add("marginLeft", pageSettings.MarginLeft);
     message.Parameters.Add("marginRight", pageSettings.MarginRight);
+    message.Parameters.Add("printBackground", !pageSettings.IgnoreBackground);
     message.Parameters.Add("transferMode", "ReturnAsStream");
 
     return message;
