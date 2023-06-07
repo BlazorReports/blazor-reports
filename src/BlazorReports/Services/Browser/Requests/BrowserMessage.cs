@@ -5,7 +5,8 @@ namespace BlazorReports.Services.Browser.Requests;
 /// <summary>
 /// Message sent to the browser
 /// </summary>
-internal class BrowserMessage(string Method)
+/// <param name="method"> The method executed by the browser</param>
+internal class BrowserMessage(string method)
 {
   /// <summary>
   /// The id of the message
@@ -14,7 +15,7 @@ internal class BrowserMessage(string Method)
   /// <summary>
   /// The method executed by the browser
   /// </summary>
-  public string Method { get; } = Method;
+  public string Method { get; } = method;
   /// <summary>
   /// The parameters that we want to feed into the browser
   /// </summary>
