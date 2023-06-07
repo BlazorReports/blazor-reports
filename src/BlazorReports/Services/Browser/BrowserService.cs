@@ -109,7 +109,7 @@ public sealed class BrowserService : IDisposable
     var chromiumProcess = new Process();
     var defaultChromiumArgument = new List<string>
     {
-      "--headless",
+      "--headless=new",
       "--disable-gpu",
       "--hide-scrollbars",
       "--mute-audio",
