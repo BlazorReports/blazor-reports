@@ -97,6 +97,10 @@ public sealed class BrowserService : IDisposable
     }
 
     var lines = await ReadDevToolsActiveFile(devToolsActivePortFile);
+    if (lines.Length != 2)
+    {
+      throw new Exception($"Could not read DevToolsActivePort file '{devToolsActivePortFile}'");
+    }
     var uri = new Uri($"ws://127.0.0.1:{lines[0]}{lines[1]}");
     _connection = new Connection(uri);
   }
@@ -165,7 +169,7 @@ public sealed class BrowserService : IDisposable
   private static async ValueTask<string[]> ReadDevToolsActiveFile(string devToolsActivePortFile)
   {
     if (_devToolsActivePortDirectory is null || !_devToolsActivePortDirectory.Exists)
-      throw new Exception($"The {nameof(_devToolsActivePortDirectory)} is null");
+      throw new DirectoryNotFoundException($"The {nameof(_devToolsActivePortDirectory)} is null");
 
     var watcher = new FileSystemWatcher
     {
@@ -180,28 +184,23 @@ public sealed class BrowserService : IDisposable
     void CreatedHandler(object s, FileSystemEventArgs e)
     {
       if (e.ChangeType != WatcherChangeTypes.Created) return;
-      HandleFileCreationAsync(devToolsActivePortFile, tcs, 5).ConfigureAwait(false);
+      HandleFileCreationAsync(devToolsActivePortFile, tcs, 5, 2).ConfigureAwait(false);
     }
 
     watcher.Created += CreatedHandler;
 
     // Register the CancellationToken's callback
     var callback = cts.Token.Register(() =>
-    {
       tcs.TrySetException(
-        new TimeoutException($"A timeout of 10 seconds exceeded, the file '{devToolsActivePortFile}' did not exist"));
-    });
-
-    // if the file already exists, immediately return the lines
-    if (File.Exists(devToolsActivePortFile))
-    {
-      await callback.DisposeAsync(); // Dispose of callback to remove the createdHandler
-      watcher.Dispose(); // Dispose of the watcher
-      return await File.ReadAllLinesAsync(devToolsActivePortFile, cts.Token);
-    }
+        new TimeoutException($"A timeout of 10 seconds exceeded, the file '{devToolsActivePortFile}' did not exist")));
 
     try
     {
+      // if the file already exists, immediately return the lines
+      if (File.Exists(devToolsActivePortFile))
+      {
+        return await File.ReadAllLinesAsync(devToolsActivePortFile, cts.Token);
+      }
       return await tcs.Task; // Wait for the file to be created or the timeout to occur
     }
     finally
@@ -211,16 +210,29 @@ public sealed class BrowserService : IDisposable
     }
   }
 
-  private static async Task HandleFileCreationAsync(string filePath, TaskCompletionSource<string[]> tcs, int maxRetries)
+  private static async Task HandleFileCreationAsync(string filePath, TaskCompletionSource<string[]> tcs, int maxRetries, int expectedLines)
   {
     var retryCount = 0;
     while (true)
     {
       try
       {
-        var lines = await File.ReadAllLinesAsync(filePath);
-        tcs.TrySetResult(lines);
-        break;
+        if (File.Exists(filePath))
+        {
+          var lines = await File.ReadAllLinesAsync(filePath);
+          if (lines.Length >= expectedLines)
+          {
+            tcs.TrySetResult(lines);
+            break;
+          }
+        }
+        if (++retryCount == maxRetries)
+        {
+          tcs.TrySetException(new IOException($"Unable to read file '{filePath}' with {expectedLines} lines after {maxRetries} attempts"));
+          break;
+        }
+
+        await Task.Delay(TimeSpan.FromMilliseconds(100 * retryCount)); // Exponential backoff
       }
       catch (IOException)
       {
