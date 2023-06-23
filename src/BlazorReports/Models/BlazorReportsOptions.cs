@@ -33,5 +33,5 @@ public class BlazorReportsOptions
   /// <summary>
   /// Settings for generating a PDF
   /// </summary>
-  public BlazorReportsPageSettings? PageSettings { get; set; }
+  public BlazorReportsPageSettings PageSettings { get; set; } = new();
 }

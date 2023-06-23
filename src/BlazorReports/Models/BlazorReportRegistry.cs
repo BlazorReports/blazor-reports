@@ -33,16 +33,13 @@ public class BlazorReportRegistry
       }
     }
 
-    if (options.Value.PageSettings is not null)
-    {
-      DefaultPageSettings = options.Value.PageSettings;
-    }
+    DefaultPageSettings = options.Value.PageSettings;
   }
 
   /// <summary>
   /// The default page settings for the BlazorReports
   /// </summary>
-  public BlazorReportsPageSettings DefaultPageSettings { get; set; } = new();
+  public BlazorReportsPageSettings DefaultPageSettings { get; set; }
 
   /// <summary>
   /// The base styles for the BlazorReportRegistry.
@@ -81,7 +78,7 @@ public class BlazorReportRegistry
       Data = null,
       BaseStylesPath = options?.BaseStylesPath ?? string.Empty,
       AssetsPath = options?.AssetsPath ?? string.Empty,
-      PageSettings = options?.PdfSettings
+      PageSettings = options?.PageSettings
     };
     Reports.Add(normalizedReportName, blazorReport);
     return blazorReport;
@@ -110,7 +107,7 @@ public class BlazorReportRegistry
       Data = typeof(TD),
       BaseStylesPath = options?.BaseStylesPath ?? string.Empty,
       AssetsPath = options?.AssetsPath ?? string.Empty,
-      PageSettings = options?.PdfSettings
+      PageSettings = options?.PageSettings
     };
     Reports.Add(normalizedReportName, blazorReport);
     return blazorReport;
