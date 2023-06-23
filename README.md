@@ -51,7 +51,7 @@ Sample Blazor Components
 
 @code {
     [Parameter]
-    public MyDataDto? Data { get; set; }
+    public required MyDataDto Data { get; set; }
 }
 ```
 
