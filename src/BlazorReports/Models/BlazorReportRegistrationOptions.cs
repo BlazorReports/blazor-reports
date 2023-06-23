@@ -21,5 +21,5 @@ public class BlazorReportRegistrationOptions
   /// <summary>
   /// Settings for generating a PDF
   /// </summary>
-  public BlazorReportsPageSettings? PdfSettings { get; set; }
+  public BlazorReportsPageSettings PageSettings { get; set; } = new();
 }
