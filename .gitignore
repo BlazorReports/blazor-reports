@@ -18,6 +18,7 @@ bld/
 msbuild.log
 msbuild.err
 msbuild.wrn
+.DS_Store
 
 # Rider Excludes
 # idea folder exclude
