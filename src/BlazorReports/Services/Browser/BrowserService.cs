@@ -15,6 +15,7 @@ namespace BlazorReports.Services.Browser;
 public sealed class BrowserService : IDisposable
 {
   private readonly Browsers _browser;
+  private readonly BlazorReportsBrowserOptions _browserOptions;
   private Process? _chromiumProcess;
   private Connection? _connection;
   private readonly ConcurrentStack<BrowserPage> _browserPagePool = new();
@@ -24,9 +25,11 @@ public sealed class BrowserService : IDisposable
   /// The connection to the browser
   /// </summary>
   /// <param name="browser"> The browser to use </param>
-  public BrowserService(Browsers browser)
+  /// <param name="browserOptions"> The options for the browser </param>
+  public BrowserService(Browsers browser, BlazorReportsBrowserOptions browserOptions)
   {
     _browser = browser;
+    _browserOptions = browserOptions;
   }
 
   internal async ValueTask PrintReportFromBrowser(PipeWriter pipeWriter, string html,
@@ -104,7 +107,7 @@ public sealed class BrowserService : IDisposable
   /// <param name="chromiumExeFileName"> The path to the Chromium executable </param>
   /// <param name="devToolsDirectory"> The directory to store the DevTools files </param>
   /// <returns> The Chromium process </returns>
-  private static Process CreateChromiumProcess(string chromiumExeFileName, string devToolsDirectory)
+  private Process CreateChromiumProcess(string chromiumExeFileName, string devToolsDirectory)
   {
     var chromiumProcess = new Process();
     var defaultChromiumArgument = new List<string>
@@ -127,6 +130,9 @@ public sealed class BrowserService : IDisposable
       "--remote-debugging-port=\"0\"",
       $"--user-data-dir=\"{devToolsDirectory}\""
     };
+
+    if (_browserOptions.NoSandbox)
+      defaultChromiumArgument.Add("--no-sandbox");
 
     var processStartInfo = new ProcessStartInfo
     {

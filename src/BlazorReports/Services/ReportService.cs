@@ -33,7 +33,7 @@ public sealed class ReportService : IReportService, IDisposable
   {
     _serviceProvider = serviceProvider;
     _reportRegistry = reportRegistry;
-    _browserService = new BrowserService(options.Value.Browser);
+    _browserService = new BrowserService(options.Value.Browser, options.Value.BrowserOptions);
   }
 
   /// <summary>
