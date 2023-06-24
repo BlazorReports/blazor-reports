@@ -15,6 +15,7 @@ namespace BlazorReports.Services.Browser;
 public sealed class BrowserService : IDisposable
 {
   private readonly Browsers _browser;
+  private readonly SemaphoreSlim _browserLock = new(1, 1);
   private readonly BlazorReportsBrowserOptions _browserOptions;
   private Process? _chromiumProcess;
   private Connection? _connection;
@@ -67,42 +68,58 @@ public sealed class BrowserService : IDisposable
 
   private async ValueTask StartBrowserHeadless(Browsers browsers)
   {
+    // If there's already a connection, no need to start a new browser instance
     if (_connection is not null) return;
 
-    var chromiumExeFileName = BrowserFinder.Find(browsers);
+    // Try to get the lock
+    await _browserLock.WaitAsync();
 
-    if (!File.Exists(chromiumExeFileName))
-      throw new FileNotFoundException($"Could not find browser in location '{chromiumExeFileName}'");
-
-    var temporaryPath = Path.GetTempPath();
-    var devToolsDirectory = Path.Combine(temporaryPath, Guid.NewGuid().ToString());
-    Directory.CreateDirectory(devToolsDirectory);
-    _devToolsActivePortDirectory = new DirectoryInfo(devToolsDirectory);
-    var devToolsActivePortFile = Path.Combine(devToolsDirectory, "DevToolsActivePort");
-
-    if (File.Exists(devToolsActivePortFile))
-      File.Delete(devToolsActivePortFile);
-
-    _chromiumProcess = CreateChromiumProcess(chromiumExeFileName, devToolsDirectory);
     try
     {
-      var started = _chromiumProcess.Start();
-      if (!started)
-        throw new Exception("Could not start browser process");
-    }
-    catch (Exception exception)
-    {
-      Console.WriteLine(exception);
-      throw;
-    }
+      // Check again to make sure a browser instance wasn't created while waiting for the lock
+      if (_connection is not null) return;
 
-    var lines = await ReadDevToolsActiveFile(devToolsActivePortFile);
-    if (lines.Length != 2)
-    {
-      throw new Exception($"Could not read DevToolsActivePort file '{devToolsActivePortFile}'");
+      var chromiumExeFileName = BrowserFinder.Find(browsers);
+
+      if (!File.Exists(chromiumExeFileName))
+        throw new FileNotFoundException($"Could not find browser in location '{chromiumExeFileName}'");
+
+      var temporaryPath = Path.GetTempPath();
+      var devToolsDirectory = Path.Combine(temporaryPath, Guid.NewGuid().ToString());
+      Directory.CreateDirectory(devToolsDirectory);
+      _devToolsActivePortDirectory = new DirectoryInfo(devToolsDirectory);
+      var devToolsActivePortFile = Path.Combine(devToolsDirectory, "DevToolsActivePort");
+
+      if (File.Exists(devToolsActivePortFile))
+        File.Delete(devToolsActivePortFile);
+
+      _chromiumProcess = CreateChromiumProcess(chromiumExeFileName, devToolsDirectory);
+      try
+      {
+        var started = _chromiumProcess.Start();
+        if (!started)
+          throw new Exception("Could not start browser process");
+      }
+      catch (Exception exception)
+      {
+        Console.WriteLine(exception);
+        throw;
+      }
+
+      var lines = await ReadDevToolsActiveFile(devToolsActivePortFile);
+      if (lines.Length != 2)
+      {
+        throw new Exception($"Could not read DevToolsActivePort file '{devToolsActivePortFile}'");
+      }
+
+      var uri = new Uri($"ws://127.0.0.1:{lines[0]}{lines[1]}");
+      _connection = new Connection(uri);
     }
-    var uri = new Uri($"ws://127.0.0.1:{lines[0]}{lines[1]}");
-    _connection = new Connection(uri);
+    finally
+    {
+      // Release the lock
+      _browserLock.Release();
+    }
   }
 
   /// <summary>
@@ -201,6 +218,7 @@ public sealed class BrowserService : IDisposable
       {
         return await File.ReadAllLinesAsync(devToolsActivePortFile, cts.Token);
       }
+
       return await tcs.Task; // Wait for the file to be created or the timeout to occur
     }
     finally
@@ -210,7 +228,8 @@ public sealed class BrowserService : IDisposable
     }
   }
 
-  private static async Task HandleFileCreationAsync(string filePath, TaskCompletionSource<string[]> tcs, int maxRetries, int expectedLines)
+  private static async Task HandleFileCreationAsync(string filePath, TaskCompletionSource<string[]> tcs, int maxRetries,
+    int expectedLines)
   {
     var retryCount = 0;
     while (true)
@@ -226,9 +245,12 @@ public sealed class BrowserService : IDisposable
             break;
           }
         }
+
         if (++retryCount == maxRetries)
         {
-          tcs.TrySetException(new IOException($"Unable to read file '{filePath}' with {expectedLines} lines after {maxRetries} attempts"));
+          tcs.TrySetException(
+            new IOException(
+              $"Unable to read file '{filePath}' with {expectedLines} lines after {maxRetries} attempts"));
           break;
         }
 

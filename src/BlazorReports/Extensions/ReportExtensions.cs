@@ -28,8 +28,9 @@ public static class ReportExtensions
   public static IApplicationBuilder RegisterBlazorReport<T, TD>(this IApplicationBuilder app,
     Action<BlazorReportRegistrationOptions>? setupAction = null) where T : ComponentBase where TD : class
   {
-    var options = GetReportRegistrationOptions(app.ApplicationServices, setupAction);
-    var reportRegistry = app.ApplicationServices.GetRequiredService<BlazorReportRegistry>();
+    using var serviceScope = app.ApplicationServices.CreateScope();
+    var options = GetReportRegistrationOptions(serviceScope, setupAction);
+    var reportRegistry = serviceScope.ServiceProvider.GetRequiredService<BlazorReportRegistry>();
 
     reportRegistry.AddReport<T, TD>(options);
 
@@ -47,8 +48,9 @@ public static class ReportExtensions
   public static IApplicationBuilder RegisterBlazorReport<T>(this IApplicationBuilder app,
     Action<BlazorReportRegistrationOptions>? setupAction = null) where T : ComponentBase
   {
-    var options = GetReportRegistrationOptions(app.ApplicationServices, setupAction);
-    var reportRegistry = app.ApplicationServices.GetRequiredService<BlazorReportRegistry>();
+    using var serviceScope = app.ApplicationServices.CreateScope();
+    var options = GetReportRegistrationOptions(serviceScope, setupAction);
+    var reportRegistry = serviceScope.ServiceProvider.GetRequiredService<BlazorReportRegistry>();
 
     reportRegistry.AddReport<T>(options);
 
@@ -66,9 +68,10 @@ public static class ReportExtensions
   public static RouteHandlerBuilder MapBlazorReport<T>(this IEndpointRouteBuilder endpoints,
     Action<BlazorReportRegistrationOptions>? setupAction = null) where T : ComponentBase
   {
-    var options = GetReportRegistrationOptions(endpoints.ServiceProvider, setupAction);
+    using var serviceScope = endpoints.ServiceProvider.CreateScope();
+    var options = GetReportRegistrationOptions(serviceScope, setupAction);
 
-    var reportRegistry = endpoints.ServiceProvider.GetRequiredService<BlazorReportRegistry>();
+    var reportRegistry = serviceScope.ServiceProvider.GetRequiredService<BlazorReportRegistry>();
     var blazorReport = reportRegistry.AddReport<T>(options);
 
     return endpoints.MapPost($"reports/{blazorReport.NormalizedName}",
@@ -93,9 +96,10 @@ public static class ReportExtensions
   public static RouteHandlerBuilder MapBlazorReport<T, TD>(this IEndpointRouteBuilder endpoints,
     Action<BlazorReportRegistrationOptions>? setupAction = null) where T : ComponentBase where TD : class
   {
-    var options = GetReportRegistrationOptions(endpoints.ServiceProvider, setupAction);
+    using var serviceScope = endpoints.ServiceProvider.CreateScope();
+    var options = GetReportRegistrationOptions(serviceScope, setupAction);
 
-    var reportRegistry = endpoints.ServiceProvider.GetRequiredService<BlazorReportRegistry>();
+    var reportRegistry = serviceScope.ServiceProvider.GetRequiredService<BlazorReportRegistry>();
     var blazorReport = reportRegistry.AddReport<T, TD>(options);
 
     return endpoints.MapPost($"reports/{blazorReport.NormalizedName}",
@@ -108,11 +112,11 @@ public static class ReportExtensions
       .Produces<FileStreamHttpResult>(200, "application/pdf");
   }
 
-  private static BlazorReportRegistrationOptions GetReportRegistrationOptions(IServiceProvider serviceProvider,
+  private static BlazorReportRegistrationOptions GetReportRegistrationOptions(IServiceScope serviceScope,
     Action<BlazorReportRegistrationOptions>? setupAction = null)
   {
     var options = new BlazorReportRegistrationOptions();
-    var globalOptions = serviceProvider.GetRequiredService<IOptionsSnapshot<BlazorReportsOptions>>().Value;
+    var globalOptions = serviceScope.ServiceProvider.GetRequiredService<IOptionsSnapshot<BlazorReportsOptions>>().Value;
     options.PageSettings = globalOptions.PageSettings;
     setupAction?.Invoke(options);
     return options;
