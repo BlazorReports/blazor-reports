@@ -12,7 +12,7 @@ namespace BlazorReports.Services.Browser;
 /// <summary>
 /// Represents a connection to the browser
 /// </summary>
-public sealed class BrowserService : IDisposable
+public sealed class BrowserService : IAsyncDisposable
 {
   private readonly Browsers _browser;
   private readonly SemaphoreSlim _browserLock = new(1, 1);
@@ -56,6 +56,7 @@ public sealed class BrowserService : IDisposable
     var createTargetMessage = new BrowserMessage("Target.createTarget");
     createTargetMessage.Parameters.Add("url", "about:blank");
     // createTargetMessage.Parameters.Add("enableBeginFrameControl", true);
+    await _connection.ConnectAsync(stoppingToken);
     return await _connection.SendAsync<BrowserResultResponse<CreateTargetResponse>, BrowserPage>(
       createTargetMessage, CreateTargetResponseSerializationContext.Default.BrowserResultResponseCreateTargetResponse,
       targetResponse =>
@@ -274,13 +275,14 @@ public sealed class BrowserService : IDisposable
   /// <summary>
   /// Disposes of the browser service
   /// </summary>
-  public void Dispose()
+  public async ValueTask DisposeAsync()
   {
     _chromiumProcess?.Kill();
     _chromiumProcess?.Dispose();
-    _connection?.Dispose();
+    if (_connection != null)
+      await _connection.DisposeAsync();
     foreach (var browserPage in _browserPagePool)
-      browserPage.Dispose();
+      await browserPage.DisposeAsync();
     if (_devToolsActivePortDirectory is not null && _devToolsActivePortDirectory.Exists)
       Directory.Delete(_devToolsActivePortDirectory.FullName, true);
   }

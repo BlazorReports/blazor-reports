@@ -13,7 +13,7 @@ namespace BlazorReports.Services;
 /// <summary>
 /// Service for generating reports
 /// </summary>
-public sealed class ReportService : IReportService, IDisposable
+public sealed class ReportService : IReportService, IAsyncDisposable
 {
   private readonly IServiceProvider _serviceProvider;
   private readonly BlazorReportRegistry _reportRegistry;
@@ -184,8 +184,8 @@ public sealed class ReportService : IReportService, IDisposable
   /// <summary>
   /// Disposes the blazor report service
   /// </summary>
-  public void Dispose()
+  public async ValueTask DisposeAsync()
   {
-    _browserService.Dispose();
+    await _browserService.DisposeAsync();
   }
 }
