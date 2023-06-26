@@ -11,7 +11,7 @@ namespace BlazorReports.Services.Browser;
 /// <summary>
 /// Represents a connection to the browser
 /// </summary>
-internal sealed class Connection : IDisposable
+internal sealed class Connection : IAsyncDisposable
 {
   private readonly ClientWebSocket _webSocket = new();
   private readonly ArrayPool<byte> _bufferPool = ArrayPool<byte>.Shared;
@@ -25,6 +25,7 @@ internal sealed class Connection : IDisposable
   private Task? _receiveTask;
   private bool _disposed;
   private readonly SemaphoreSlim _connectionLock = new(1, 1);
+  private readonly CancellationTokenSource _cts = new();
 
   /// <summary>
   /// The uri of the connection
@@ -45,20 +46,29 @@ internal sealed class Connection : IDisposable
     var bufferToSend = _bufferPool.Rent(BufferSize);
     var bufferToSendMemory = new Memory<byte>(bufferToSend);
 
-    while (!_disposed)
+    try
     {
-      await _sendSignal.WaitAsync();
+      while (!_disposed)
+      {
+        await _sendSignal.WaitAsync(_cts.Token);
 
-      if (!_sendQueue.TryDequeue(out var message)) continue;
+        if (!_sendQueue.TryDequeue(out var message)) continue;
 
-      var buffer =
-        JsonSerializer.SerializeToUtf8Bytes(message, BrowserMessageSerializationContext.Default.BrowserMessage);
-      buffer.CopyTo(bufferToSendMemory);
-      await _webSocket.SendAsync(bufferToSendMemory[..buffer.Length], WebSocketMessageType.Text, true,
-        CancellationToken.None);
+        var buffer =
+          JsonSerializer.SerializeToUtf8Bytes(message, BrowserMessageSerializationContext.Default.BrowserMessage);
+        buffer.CopyTo(bufferToSendMemory);
+        await _webSocket.SendAsync(bufferToSendMemory[..buffer.Length], WebSocketMessageType.Text, true, _cts.Token);
+      }
     }
-
-    _bufferPool.Return(bufferToSend);
+    catch (OperationCanceledException)
+    {
+      // Log or handle the fact that the operation was cancelled
+      Debug.WriteLine("Operation was cancelled.");
+    }
+    finally
+    {
+      _bufferPool.Return(bufferToSend);
+    }
   }
 
   private async Task ProcessResponsesAsync()
@@ -66,11 +76,11 @@ internal sealed class Connection : IDisposable
     var bufferToReceive = _bufferPool.Rent(BufferSize);
     var bufferToReceiveMemory = new Memory<byte>(bufferToReceive);
 
-    while (!_disposed)
+    try
     {
-      try
+      while (!_disposed)
       {
-        var result = await _webSocket.ReceiveAsync(bufferToReceiveMemory, CancellationToken.None);
+        var result = await _webSocket.ReceiveAsync(bufferToReceiveMemory, _cts.Token);
 
         var messageReceived = bufferToReceiveMemory[..result.Count];
         var jsonDoc = JsonDocument.Parse(messageReceived);
@@ -84,17 +94,31 @@ internal sealed class Connection : IDisposable
           taskSource.SetResult(jsonDoc);
         }
       }
-      catch (Exception ex)
-      {
-        Debug.WriteLine(ex.Message);
-      }
     }
-
-    _bufferPool.Return(bufferToReceive);
+    catch (OperationCanceledException)
+    {
+      // Log or handle the fact that the operation was cancelled
+      Debug.WriteLine("Operation was cancelled.");
+    }
+    catch (WebSocketException ex)
+    {
+      Debug.WriteLine(ex.Message);
+    }
+    catch (JsonException ex)
+    {
+      Debug.WriteLine(ex.Message);
+    }
+    catch (Exception ex)
+    {
+      Debug.WriteLine(ex.Message);
+    }
+    finally
+    {
+      _bufferPool.Return(bufferToReceive);
+    }
   }
 
-  public async ValueTask<T> SendAsync<T>(BrowserMessage message, JsonTypeInfo<T> returnDataJsonTypeInfo,
-    CancellationToken stoppingToken = default)
+  private async Task<JsonDocument> SendMessageAsync(BrowserMessage message, CancellationToken stoppingToken)
   {
     message.Id = Interlocked.Increment(ref _lastMessageId);
     _sendQueue.Enqueue(message);
@@ -103,22 +127,76 @@ internal sealed class Connection : IDisposable
     var tcs = new TaskCompletionSource<JsonDocument>();
     _responseTasks[message.Id] = tcs;
 
-    if (await Task.WhenAny(tcs.Task, Task.Delay(TimeSpan.FromSeconds(ResponseTimeoutInSeconds), stoppingToken)) ==
-        tcs.Task)
+    using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
+    timeoutCts.CancelAfter(TimeSpan.FromSeconds(ResponseTimeoutInSeconds));
+
+    if (await Task.WhenAny(tcs.Task, Task.Delay(-1, timeoutCts.Token)) == tcs.Task)
     {
-      var response = await tcs.Task;
-      var parsedMessage = JsonSerializer.Deserialize(response.RootElement.GetRawText(), returnDataJsonTypeInfo);
-
-      if (parsedMessage is null)
-        throw new Exception("Could not deserialize response");
-
-      return parsedMessage;
+      return await tcs.Task;
     }
     else
     {
       _responseTasks.TryRemove(message.Id, out _);
       throw new TimeoutException("The operation timed out.");
     }
+  }
+
+  public async ValueTask<T> SendAsync<T>(BrowserMessage message, JsonTypeInfo<T> returnDataJsonTypeInfo,
+    CancellationToken stoppingToken = default)
+  {
+    var response = await SendMessageAsync(message, stoppingToken);
+    var parsedMessage = JsonSerializer.Deserialize(response.RootElement.GetRawText(), returnDataJsonTypeInfo);
+
+    if (parsedMessage is null)
+      throw new Exception("Could not deserialize response");
+
+    return parsedMessage;
+  }
+
+  /// <summary>
+  /// Sends a message to the browser
+  /// </summary>
+  /// <param name="message"> The message to send</param>
+  /// <param name="returnDataJsonTypeInfo"> The json type info of the return data</param>
+  /// <param name="responseHandler"> The response handler</param>
+  /// <param name="stoppingToken"> Token to stop the task</param>
+  public async ValueTask<TR> SendAsync<T, TR>(
+    BrowserMessage message,
+    JsonTypeInfo<T> returnDataJsonTypeInfo,
+    Func<T, Task<TR>> responseHandler,
+    CancellationToken stoppingToken = default
+  )
+  {
+    var response = await SendMessageAsync(message, stoppingToken);
+    var parsedMessage = JsonSerializer.Deserialize(response.RootElement.GetRawText(), returnDataJsonTypeInfo);
+
+    if (parsedMessage is null)
+      throw new Exception("Could not deserialize response");
+
+    return await responseHandler(parsedMessage);
+  }
+
+  /// <summary>
+  /// Sends a message to the browser
+  /// </summary>
+  /// <param name="message"> The message to send</param>
+  /// <param name="returnDataJsonTypeInfo"> The json type info of the return data</param>
+  /// <param name="responseAction"> The response action</param>
+  /// <param name="stoppingToken"> Token to stop the task</param>
+  public async ValueTask SendAsync<T>(
+    BrowserMessage message,
+    JsonTypeInfo<T> returnDataJsonTypeInfo,
+    Action<T> responseAction,
+    CancellationToken stoppingToken = default
+  )
+  {
+    var response = await SendMessageAsync(message, stoppingToken);
+    var parsedMessage = JsonSerializer.Deserialize(response.RootElement.GetRawText(), returnDataJsonTypeInfo);
+
+    if (parsedMessage is null)
+      throw new Exception("Could not deserialize response");
+
+    responseAction(parsedMessage);
   }
 
   public void SendAsync(BrowserMessage message)
@@ -152,44 +230,6 @@ internal sealed class Connection : IDisposable
     }
   }
 
-  /// <summary>
-  /// Sends a message to the browser
-  /// </summary>
-  /// <param name="message"> The message to send</param>
-  /// <param name="returnDataJsonTypeInfo"> The json type info of the return data</param>
-  /// <param name="responseHandler"> The response handler</param>
-  /// <param name="stoppingToken"> Token to stop the task</param>
-  public async ValueTask<TR> SendAsync<T, TR>(
-    BrowserMessage message,
-    JsonTypeInfo<T> returnDataJsonTypeInfo,
-    Func<T, Task<TR>> responseHandler,
-    CancellationToken stoppingToken = default
-  )
-  {
-    message.Id = Interlocked.Increment(ref _lastMessageId);
-    _sendQueue.Enqueue(message);
-    _sendSignal.Release();
-
-    var tcs = new TaskCompletionSource<JsonDocument>();
-    _responseTasks[message.Id] = tcs;
-
-    if (await Task.WhenAny(tcs.Task, Task.Delay(TimeSpan.FromSeconds(ResponseTimeoutInSeconds), stoppingToken)) ==
-        tcs.Task)
-    {
-      var response = await tcs.Task;
-      var parsedMessage = JsonSerializer.Deserialize(response.RootElement.GetRawText(), returnDataJsonTypeInfo);
-
-      if (parsedMessage is null)
-        throw new Exception("Could not deserialize response");
-
-      return await responseHandler(parsedMessage);
-    }
-    else
-    {
-      _responseTasks.TryRemove(message.Id, out _);
-      throw new TimeoutException("The operation timed out.");
-    }
-  }
 
   public async ValueTask SendAsync<T>(
     BrowserMessage message,
@@ -223,47 +263,6 @@ internal sealed class Connection : IDisposable
     }
   }
 
-
-  /// <summary>
-  /// Sends a message to the browser
-  /// </summary>
-  /// <param name="message"> The message to send</param>
-  /// <param name="returnDataJsonTypeInfo"> The json type info of the return data</param>
-  /// <param name="responseAction"> The response action</param>
-  /// <param name="stoppingToken"> Token to stop the task</param>
-  public async ValueTask SendAsync<T>(
-    BrowserMessage message,
-    JsonTypeInfo<T> returnDataJsonTypeInfo,
-    Action<T> responseAction,
-    CancellationToken stoppingToken = default
-  )
-  {
-    message.Id = Interlocked.Increment(ref _lastMessageId);
-    _sendQueue.Enqueue(message);
-    _sendSignal.Release();
-
-    var tcs = new TaskCompletionSource<JsonDocument>();
-    _responseTasks[message.Id] = tcs;
-
-    if (await Task.WhenAny(tcs.Task, Task.Delay(TimeSpan.FromSeconds(ResponseTimeoutInSeconds), stoppingToken)) ==
-        tcs.Task)
-    {
-      var response = await tcs.Task;
-      var parsedMessage = JsonSerializer.Deserialize(response.RootElement.GetRawText(), returnDataJsonTypeInfo);
-
-      if (parsedMessage is null)
-        throw new Exception("Could not deserialize response");
-
-      responseAction(parsedMessage);
-    }
-    else
-    {
-      _responseTasks.TryRemove(message.Id, out _);
-      throw new TimeoutException("The operation timed out.");
-    }
-  }
-
-
   /// <summary>
   /// Closes the connection
   /// </summary>
@@ -273,11 +272,16 @@ internal sealed class Connection : IDisposable
     await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "", stoppingToken);
   }
 
-  public void Dispose()
+  public async ValueTask DisposeAsync()
   {
     _disposed = true;
-    _sendTask?.Dispose();
-    _receiveTask?.Dispose();
+    await _cts.CancelAsync();
+
+    if (_sendTask is not null)
+      await _sendTask;
+    if (_receiveTask is not null)
+      await _receiveTask;
+
     _webSocket.Dispose();
     _sendSignal.Dispose();
     _responseTasks.Clear();

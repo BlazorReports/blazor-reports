@@ -12,7 +12,7 @@ namespace BlazorReports.Services.Browser;
 /// <summary>
 /// Represents a page in the browser
 /// </summary>
-public sealed class BrowserPage : IDisposable
+public sealed class BrowserPage : IAsyncDisposable
 {
   private readonly Connection _connection;
   private static readonly CustomFromBase64Transform Transform = new(FromBase64TransformMode.IgnoreWhiteSpaces);
@@ -162,9 +162,9 @@ public sealed class BrowserPage : IDisposable
   /// <summary>
   /// Disposes the BrowserPage
   /// </summary>
-  public void Dispose()
+  public async ValueTask DisposeAsync()
   {
-    _connection.Dispose();
+    await _connection.DisposeAsync();
     Transform.Dispose();
   }
 }
