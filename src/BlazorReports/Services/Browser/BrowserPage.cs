@@ -35,29 +35,31 @@ public sealed class BrowserPage : IDisposable
   /// <exception cref="ArgumentException"> Thrown when the HTML is null or whitespace</exception>
   internal async Task DisplayHtml(string html, CancellationToken stoppingToken = default)
   {
+    await _connection.ConnectAsync(stoppingToken);
     if (string.IsNullOrWhiteSpace(html))
       throw new ArgumentException("Value cannot be null or whitespace.", nameof(html));
 
     // Enables or disables the cache
     var cacheMessage = new BrowserMessage("Network.setCacheDisabled");
     cacheMessage.Parameters.Add("cacheDisabled", false);
-    await _connection.SendAsync(cacheMessage, stoppingToken: stoppingToken);
+    _connection.SendAsync(cacheMessage);
 
     var getPageFrameTreeMessage = new BrowserMessage("Page.getFrameTree");
     await _connection.SendAsync(getPageFrameTreeMessage,
       PageGetFrameTreeResponseSerializationContext.Default.BrowserResultResponsePageGetFrameTreeResponse,
-      async response =>
+      response =>
       {
         var pageSetDocumentContentMessage = new BrowserMessage("Page.setDocumentContent");
         pageSetDocumentContentMessage.Parameters.Add("frameId", response.Result.FrameTree.Frame.Id);
         pageSetDocumentContentMessage.Parameters.Add("html", html);
-        await _connection.SendAsync(pageSetDocumentContentMessage, stoppingToken: stoppingToken);
+        _connection.SendAsync(pageSetDocumentContentMessage);
       }, stoppingToken);
   }
 
   internal async ValueTask ConvertPageToPdf(PipeWriter pipeWriter, BlazorReportsPageSettings pageSettings,
     CancellationToken stoppingToken = default)
   {
+    await _connection.ConnectAsync(stoppingToken);
     var message = CreatePrintToPdfBrowserMessage(pageSettings);
 
     await _connection.SendAsync(message,
@@ -149,11 +151,12 @@ public sealed class BrowserPage : IDisposable
     }
   }
 
-  private async ValueTask ClosePdfStream(string stream, CancellationToken stoppingToken)
+  private async ValueTask ClosePdfStream(string stream, CancellationToken stoppingToken = default)
   {
+    await _connection.ConnectAsync(stoppingToken);
     var ioCloseMessage = new BrowserMessage("IO.close");
     ioCloseMessage.Parameters.Add("handle", stream);
-    await _connection.SendAsync(ioCloseMessage, stoppingToken: stoppingToken);
+    _connection.SendAsync(ioCloseMessage);
   }
 
   /// <summary>

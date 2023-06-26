@@ -56,6 +56,7 @@ public sealed class BrowserService : IDisposable
     var createTargetMessage = new BrowserMessage("Target.createTarget");
     createTargetMessage.Parameters.Add("url", "about:blank");
     // createTargetMessage.Parameters.Add("enableBeginFrameControl", true);
+    await _connection.ConnectAsync(stoppingToken);
     return await _connection.SendAsync<BrowserResultResponse<CreateTargetResponse>, BrowserPage>(
       createTargetMessage, CreateTargetResponseSerializationContext.Default.BrowserResultResponseCreateTargetResponse,
       targetResponse =>
