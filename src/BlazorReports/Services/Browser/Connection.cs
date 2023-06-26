@@ -23,7 +23,6 @@ internal sealed class Connection : IAsyncDisposable
   private int _lastMessageId;
   private Task? _sendTask;
   private Task? _receiveTask;
-  private bool _disposed;
   private readonly SemaphoreSlim _connectionLock = new(1, 1);
   private readonly CancellationTokenSource _cts = new();
 
@@ -48,7 +47,7 @@ internal sealed class Connection : IAsyncDisposable
 
     try
     {
-      while (!_disposed)
+      while (!_cts.IsCancellationRequested)
       {
         await _sendSignal.WaitAsync(_cts.Token);
 
@@ -78,7 +77,7 @@ internal sealed class Connection : IAsyncDisposable
 
     try
     {
-      while (!_disposed)
+      while (!_cts.IsCancellationRequested)
       {
         var result = await _webSocket.ReceiveAsync(bufferToReceiveMemory, _cts.Token);
 
@@ -145,7 +144,7 @@ internal sealed class Connection : IAsyncDisposable
     CancellationToken stoppingToken = default)
   {
     var response = await SendMessageAsync(message, stoppingToken);
-    var parsedMessage = JsonSerializer.Deserialize(response.RootElement.GetRawText(), returnDataJsonTypeInfo);
+    var parsedMessage = response.RootElement.Deserialize(returnDataJsonTypeInfo);
 
     if (parsedMessage is null)
       throw new Exception("Could not deserialize response");
@@ -168,7 +167,7 @@ internal sealed class Connection : IAsyncDisposable
   )
   {
     var response = await SendMessageAsync(message, stoppingToken);
-    var parsedMessage = JsonSerializer.Deserialize(response.RootElement.GetRawText(), returnDataJsonTypeInfo);
+    var parsedMessage = response.RootElement.Deserialize(returnDataJsonTypeInfo);
 
     if (parsedMessage is null)
       throw new Exception("Could not deserialize response");
@@ -191,7 +190,7 @@ internal sealed class Connection : IAsyncDisposable
   )
   {
     var response = await SendMessageAsync(message, stoppingToken);
-    var parsedMessage = JsonSerializer.Deserialize(response.RootElement.GetRawText(), returnDataJsonTypeInfo);
+    var parsedMessage = response.RootElement.Deserialize(returnDataJsonTypeInfo);
 
     if (parsedMessage is null)
       throw new Exception("Could not deserialize response");
@@ -249,7 +248,7 @@ internal sealed class Connection : IAsyncDisposable
         tcs.Task)
     {
       var response = await tcs.Task;
-      var parsedMessage = JsonSerializer.Deserialize(response.RootElement.GetRawText(), returnDataJsonTypeInfo);
+      var parsedMessage = response.RootElement.Deserialize(returnDataJsonTypeInfo);
 
       if (parsedMessage is null)
         throw new Exception("Could not deserialize response");
@@ -274,7 +273,6 @@ internal sealed class Connection : IAsyncDisposable
 
   public async ValueTask DisposeAsync()
   {
-    _disposed = true;
     await _cts.CancelAsync();
 
     if (_sendTask is not null)
