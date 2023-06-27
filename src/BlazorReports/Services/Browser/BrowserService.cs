@@ -35,7 +35,7 @@ public sealed class BrowserService : IAsyncDisposable
     _browserOptions = browserOptions;
   }
 
-  internal async ValueTask<OneOf<Success, ServerBusyProblem>> PrintReportFromBrowser(PipeWriter pipeWriter, string html,
+  internal async ValueTask<OneOf<Success, ServerBusyProblem, OperationCancelledProblem>> PrintReportFromBrowser(PipeWriter pipeWriter, string html,
     BlazorReportsPageSettings pageSettings, CancellationToken cancellationToken)
   {
     await StartBrowserHeadless();
@@ -45,6 +45,7 @@ public sealed class BrowserService : IAsyncDisposable
     const int maxRetryCount = 3;
     try
     {
+      var operationCancelled = false;
       while (browserPage is null && retryCount < maxRetryCount)
       {
         var result = await GetBrowserPage(cancellationToken);
@@ -55,9 +56,19 @@ public sealed class BrowserService : IAsyncDisposable
           },
           async poolLimitReached =>
           {
-            await Task.Delay(_browserOptions.ResponseTimeout.Divide(maxRetryCount), cancellationToken);
-            retryCount++;
+            try
+            {
+              await Task.Delay(_browserOptions.ResponseTimeout.Divide(maxRetryCount), cancellationToken);
+              retryCount++;
+            }
+            catch (TaskCanceledException)
+            {
+              operationCancelled = true;
+            }
           });
+
+        if (operationCancelled)
+          return new OperationCancelledProblem();
 
         if (retryCount >= maxRetryCount)
         {

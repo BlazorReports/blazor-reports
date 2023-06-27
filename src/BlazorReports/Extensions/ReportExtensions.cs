@@ -86,6 +86,11 @@ public static class ReportExtensions
             {
               context.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
               await context.Response.BodyWriter.CompleteAsync();
+            },
+            async operationCancelledProblem =>
+            {
+              context.Response.StatusCode = StatusCodes.Status499ClientClosedRequest;
+              await context.Response.BodyWriter.CompleteAsync();
             });
         })
       .Produces<FileStreamHttpResult>(200, "application/pdf")
@@ -121,6 +126,11 @@ public static class ReportExtensions
             async serverBusyProblem =>
             {
               context.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
+              await context.Response.BodyWriter.CompleteAsync();
+            },
+            async operationCancelledProblem =>
+            {
+              context.Response.StatusCode = StatusCodes.Status499ClientClosedRequest;
               await context.Response.BodyWriter.CompleteAsync();
             });
         })
