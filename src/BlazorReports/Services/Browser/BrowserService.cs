@@ -17,7 +17,6 @@ namespace BlazorReports.Services.Browser;
 /// </summary>
 public sealed class BrowserService : IAsyncDisposable
 {
-  private readonly Browsers _browser;
   private readonly SemaphoreSlim _browserLock = new(1, 1);
   private readonly BlazorReportsBrowserOptions _browserOptions;
   private Process? _chromiumProcess;
@@ -30,18 +29,16 @@ public sealed class BrowserService : IAsyncDisposable
   /// <summary>
   /// The connection to the browser
   /// </summary>
-  /// <param name="browser"> The browser to use </param>
   /// <param name="browserOptions"> The options for the browser </param>
-  public BrowserService(Browsers browser, BlazorReportsBrowserOptions browserOptions)
+  public BrowserService(BlazorReportsBrowserOptions browserOptions)
   {
-    _browser = browser;
     _browserOptions = browserOptions;
   }
 
   internal async ValueTask<OneOf<Success, ServerBusyProblem>> PrintReportFromBrowser(PipeWriter pipeWriter, string html,
     BlazorReportsPageSettings pageSettings, CancellationToken cancellationToken)
   {
-    await StartBrowserHeadless(_browser);
+    await StartBrowserHeadless();
     BrowserPage? browserPage = null;
 
     var retryCount = 0;
@@ -124,7 +121,7 @@ public sealed class BrowserService : IAsyncDisposable
     }
   }
 
-  private async ValueTask StartBrowserHeadless(Browsers browsers)
+  private async ValueTask StartBrowserHeadless()
   {
     // If there's already a connection, no need to start a new browser instance
     if (_connection is not null) return;
@@ -145,7 +142,7 @@ public sealed class BrowserService : IAsyncDisposable
       else
       {
         // Find the browser executable (Chrome, Edge, etc.
-        browserExecutableLocation = BrowserFinder.Find(browsers);
+        browserExecutableLocation = BrowserFinder.Find(_browserOptions.Browser);
       }
 
       if (!File.Exists(browserExecutableLocation))

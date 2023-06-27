@@ -17,11 +17,6 @@ public class BlazorReportsOptions
   public string? AssetsPath { get; set; }
 
   /// <summary>
-  /// The browser to use for generating a PDF
-  /// </summary>
-  public Browsers Browser { get; set; } = Browsers.Chrome;
-
-  /// <summary>
   /// The options for the browser
   /// </summary>
   public BlazorReportsBrowserOptions BrowserOptions { get; set; } = new();

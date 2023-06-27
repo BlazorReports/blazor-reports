@@ -36,7 +36,7 @@ public sealed class ReportService : IReportService, IAsyncDisposable
   {
     _serviceProvider = serviceProvider;
     _reportRegistry = reportRegistry;
-    _browserService = new BrowserService(options.Value.Browser, options.Value.BrowserOptions);
+    _browserService = new BrowserService(options.Value.BrowserOptions);
   }
 
   /// <summary>
