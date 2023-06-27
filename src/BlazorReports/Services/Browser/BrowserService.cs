@@ -137,10 +137,19 @@ public sealed class BrowserService : IAsyncDisposable
       // Check again to make sure a browser instance wasn't created while waiting for the lock
       if (_connection is not null) return;
 
-      var chromiumExeFileName = BrowserFinder.Find(browsers);
+      string? browserExecutableLocation;
+      if (_browserOptions.BrowserExecutableLocation is not null)
+      {
+        browserExecutableLocation = _browserOptions.BrowserExecutableLocation.FullName;
+      }
+      else
+      {
+        // Find the browser executable (Chrome, Edge, etc.
+        browserExecutableLocation = BrowserFinder.Find(browsers);
+      }
 
-      if (!File.Exists(chromiumExeFileName))
-        throw new FileNotFoundException($"Could not find browser in location '{chromiumExeFileName}'");
+      if (!File.Exists(browserExecutableLocation))
+        throw new FileNotFoundException($"Could not find browser in location '{browserExecutableLocation}'");
 
       var temporaryPath = Path.GetTempPath();
       var devToolsDirectory = Path.Combine(temporaryPath, Guid.NewGuid().ToString());
@@ -151,7 +160,7 @@ public sealed class BrowserService : IAsyncDisposable
       if (File.Exists(devToolsActivePortFile))
         File.Delete(devToolsActivePortFile);
 
-      _chromiumProcess = CreateChromiumProcess(chromiumExeFileName, devToolsDirectory);
+      _chromiumProcess = CreateChromiumProcess(browserExecutableLocation, devToolsDirectory);
       try
       {
         var started = _chromiumProcess.Start();

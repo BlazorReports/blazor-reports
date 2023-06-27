@@ -22,11 +22,6 @@ public class BlazorReportsOptions
   public Browsers Browser { get; set; } = Browsers.Chrome;
 
   /// <summary>
-  /// The path to the browser executable
-  /// </summary>
-  public FileInfo? BrowserExecutablePath { get; set; }
-
-  /// <summary>
   /// The options for the browser
   /// </summary>
   public BlazorReportsBrowserOptions BrowserOptions { get; set; } = new();
