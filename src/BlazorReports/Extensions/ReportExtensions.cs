@@ -88,7 +88,8 @@ public static class ReportExtensions
               await context.Response.BodyWriter.CompleteAsync();
             });
         })
-      .Produces<FileStreamHttpResult>(200, "application/pdf");
+      .Produces<FileStreamHttpResult>(200, "application/pdf")
+      .Produces(StatusCodes.Status503ServiceUnavailable);
   }
 
   /// <summary>
@@ -123,7 +124,8 @@ public static class ReportExtensions
               await context.Response.BodyWriter.CompleteAsync();
             });
         })
-      .Produces<FileStreamHttpResult>(200, "application/pdf");
+      .Produces<FileStreamHttpResult>(200, "application/pdf")
+      .Produces(StatusCodes.Status503ServiceUnavailable);
   }
 
   private static BlazorReportRegistrationOptions GetReportRegistrationOptions(IServiceScope serviceScope,
