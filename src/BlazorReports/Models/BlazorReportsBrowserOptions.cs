@@ -6,6 +6,10 @@ namespace BlazorReports.Models;
 public class BlazorReportsBrowserOptions
 {
   /// <summary>
+  /// The path to the browser executable
+  /// </summary>
+  public FileInfo? BrowserExecutableLocation { get; set; }
+  /// <summary>
   /// Configures the browser to run without a sandbox
   /// </summary>
   public bool NoSandbox { get; set; }
