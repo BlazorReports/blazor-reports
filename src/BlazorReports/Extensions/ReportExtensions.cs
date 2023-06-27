@@ -79,7 +79,14 @@ public static class ReportExtensions
         {
           context.Response.ContentType = "application/pdf";
           context.Response.Headers.Append("Content-Disposition", $"attachment; filename=\"{blazorReport.Name}.pdf\"");
-          await reportService.GenerateReport(context.Response.BodyWriter, blazorReport, token);
+          var result = await reportService.GenerateReport(context.Response.BodyWriter, blazorReport, token);
+          result.Switch(
+            success => { },
+            async serverBusyProblem =>
+            {
+              context.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
+              await context.Response.BodyWriter.CompleteAsync();
+            });
         })
       .Produces<FileStreamHttpResult>(200, "application/pdf");
   }
@@ -107,7 +114,14 @@ public static class ReportExtensions
         {
           context.Response.ContentType = "application/pdf";
           context.Response.Headers.Append("Content-Disposition", $"attachment; filename=\"{blazorReport.Name}.pdf\"");
-          await reportService.GenerateReport(context.Response.BodyWriter, blazorReport, data, token);
+          var result = await reportService.GenerateReport(context.Response.BodyWriter, blazorReport, data, token);
+          result.Switch(
+            success => { },
+            async serverBusyProblem =>
+            {
+              context.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
+              await context.Response.BodyWriter.CompleteAsync();
+            });
         })
       .Produces<FileStreamHttpResult>(200, "application/pdf");
   }

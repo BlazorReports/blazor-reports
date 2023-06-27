@@ -13,18 +13,18 @@ namespace BlazorReports.Services.Browser;
 /// </summary>
 internal sealed class Connection : IAsyncDisposable
 {
-  private readonly ClientWebSocket _webSocket = new();
+  private ClientWebSocket _webSocket = new();
   private readonly ArrayPool<byte> _bufferPool = ArrayPool<byte>.Shared;
   private readonly SemaphoreSlim _sendSignal = new(0);
   private readonly ConcurrentQueue<BrowserMessage> _sendQueue = new();
   private readonly ConcurrentDictionary<int, TaskCompletionSource<JsonDocument>> _responseTasks = new();
   private const int BufferSize = 100 * 1024;
-  private const int ResponseTimeoutInSeconds = 30;
   private int _lastMessageId;
   private Task? _sendTask;
   private Task? _receiveTask;
   private readonly SemaphoreSlim _connectionLock = new(1, 1);
   private readonly CancellationTokenSource _cts = new();
+  private readonly TimeSpan _responseTimeout;
 
   /// <summary>
   /// The uri of the connection
@@ -35,9 +35,55 @@ internal sealed class Connection : IAsyncDisposable
   /// The constructor of the connection
   /// </summary>
   /// <param name="uri"> The uri of the connection</param>
-  public Connection(Uri uri)
+  /// <param name="responseTimeout"> The response timeout</param>
+  public Connection(Uri uri, TimeSpan responseTimeout)
   {
     Uri = uri;
+    _responseTimeout = responseTimeout;
+  }
+
+  public async Task InitializeAsync(CancellationToken stoppingToken = default)
+  {
+    await _connectionLock.WaitAsync(stoppingToken);
+    try
+    {
+      if (_webSocket.State is not WebSocketState.None) return;
+
+      await _webSocket.ConnectAsync(Uri, stoppingToken);
+
+      _sendTask = ProcessSendQueueAsync();
+      _receiveTask = ProcessResponsesAsync();
+    }
+    finally
+    {
+      _connectionLock.Release();
+    }
+  }
+
+  /// <summary>
+  /// Connects to the browser
+  /// </summary>
+  public async ValueTask ConnectAsync(CancellationToken stoppingToken = default)
+  {
+
+    if (_webSocket.State is WebSocketState.Open) return;
+
+    await _connectionLock.WaitAsync(stoppingToken);
+
+    try
+    {
+      await _webSocket.ConnectAsync(Uri, stoppingToken);
+    }
+    catch (Exception)
+    {
+      _webSocket.Dispose();
+      _webSocket = new ClientWebSocket();
+      await _webSocket.ConnectAsync(Uri, stoppingToken);
+    }
+    finally
+    {
+      _connectionLock.Release();
+    }
   }
 
   private async Task ProcessSendQueueAsync()
@@ -127,7 +173,7 @@ internal sealed class Connection : IAsyncDisposable
     _responseTasks[message.Id] = tcs;
 
     using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
-    timeoutCts.CancelAfter(TimeSpan.FromSeconds(ResponseTimeoutInSeconds));
+    timeoutCts.CancelAfter(_responseTimeout);
 
     if (await Task.WhenAny(tcs.Task, Task.Delay(-1, timeoutCts.Token)) == tcs.Task)
     {
@@ -206,30 +252,6 @@ internal sealed class Connection : IAsyncDisposable
   }
 
 
-  /// <summary>
-  /// Connects to the browser
-  /// </summary>
-  public async ValueTask ConnectAsync(CancellationToken stoppingToken = default)
-  {
-    await _connectionLock.WaitAsync(stoppingToken);
-
-    try
-    {
-      if (_webSocket.State == WebSocketState.None)
-      {
-        await _webSocket.ConnectAsync(Uri, stoppingToken);
-        // Start the send and receive tasks after connection is established
-        _sendTask = ProcessSendQueueAsync();
-        _receiveTask = ProcessResponsesAsync();
-      }
-    }
-    finally
-    {
-      _connectionLock.Release();
-    }
-  }
-
-
   public async ValueTask SendAsync<T>(
     BrowserMessage message,
     JsonTypeInfo<T> returnDataJsonTypeInfo,
@@ -244,7 +266,7 @@ internal sealed class Connection : IAsyncDisposable
     var tcs = new TaskCompletionSource<JsonDocument>();
     _responseTasks[message.Id] = tcs;
 
-    if (await Task.WhenAny(tcs.Task, Task.Delay(TimeSpan.FromSeconds(ResponseTimeoutInSeconds), stoppingToken)) ==
+    if (await Task.WhenAny(tcs.Task, Task.Delay(_responseTimeout, stoppingToken)) ==
         tcs.Task)
     {
       var response = await tcs.Task;

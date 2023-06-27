@@ -1,6 +1,9 @@
 using System.IO.Pipelines;
 using BlazorReports.Models;
+using BlazorReports.Services.Browser.Problems;
 using Microsoft.AspNetCore.Components;
+using OneOf;
+using OneOf.Types;
 
 namespace BlazorReports.Services;
 
@@ -18,7 +21,7 @@ public interface IReportService
   /// <typeparam name="T"> The component to use in the report </typeparam>
   /// <typeparam name="TD"> The type of data to use in the report </typeparam>
   /// <returns> The generated report </returns>
-  ValueTask GenerateReport<T, TD>(PipeWriter pipeWriter, TD data, CancellationToken cancellationToken = default)
+  ValueTask<OneOf<Success, ServerBusyProblem>> GenerateReport<T, TD>(PipeWriter pipeWriter, TD data, CancellationToken cancellationToken = default)
     where T : ComponentBase where TD : class;
 
   /// <summary>
@@ -30,7 +33,7 @@ public interface IReportService
   /// <param name="cancellationToken"> The cancellation token </param>
   /// <typeparam name="T"> The type of data to use in the report </typeparam>
   /// <returns> The generated report </returns>
-  ValueTask GenerateReport<T>(PipeWriter pipeWriter, BlazorReport blazorReport, T? data,
+  ValueTask<OneOf<Success, ServerBusyProblem>> GenerateReport<T>(PipeWriter pipeWriter, BlazorReport blazorReport, T? data,
     CancellationToken cancellationToken = default)
     where T : class;
 
@@ -41,7 +44,7 @@ public interface IReportService
   /// <param name="blazorReport"> The report to generate </param>
   /// <param name="cancellationToken"> The cancellation token </param>
   /// <returns> The generated report </returns>
-  ValueTask GenerateReport(PipeWriter pipeWriter, BlazorReport blazorReport,
+  ValueTask<OneOf<Success, ServerBusyProblem>> GenerateReport(PipeWriter pipeWriter, BlazorReport blazorReport,
     CancellationToken cancellationToken = default);
 
   /// <summary>

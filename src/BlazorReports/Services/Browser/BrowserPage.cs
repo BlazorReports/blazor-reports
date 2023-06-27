@@ -21,9 +21,20 @@ public sealed class BrowserPage : IAsyncDisposable
   /// Creates a new instance of the BrowserPage
   /// </summary>
   /// <param name="uri"> The uri of the page</param>
-  public BrowserPage(Uri uri)
+  /// <param name="browserOptions"> The browser options</param>
+  public BrowserPage(Uri uri, BlazorReportsBrowserOptions browserOptions)
   {
-    _connection = new Connection(uri);
+    _connection = new Connection(uri, browserOptions.ResponseTimeout);
+  }
+
+  /// <summary>
+  /// Initializes the connection to the browser
+  /// </summary>
+  /// <param name="stoppingToken"></param>
+  /// <returns></returns>
+  public async Task InitializeAsync(CancellationToken stoppingToken = default)
+  {
+    await _connection.InitializeAsync(stoppingToken);
   }
 
 

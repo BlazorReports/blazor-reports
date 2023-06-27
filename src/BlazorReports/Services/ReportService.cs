@@ -2,11 +2,14 @@ using System.IO.Pipelines;
 using BlazorReports.Components;
 using BlazorReports.Models;
 using BlazorReports.Services.Browser;
+using BlazorReports.Services.Browser.Problems;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using OneOf;
+using OneOf.Types;
 
 namespace BlazorReports.Services;
 
@@ -45,7 +48,7 @@ public sealed class ReportService : IReportService, IAsyncDisposable
   /// <typeparam name="T"> The component to use in the report </typeparam>
   /// <typeparam name="TD"> The type of data to use in the report </typeparam>
   /// <returns> The generated report </returns>
-  public async ValueTask GenerateReport<T, TD>(PipeWriter pipeWriter, TD data,
+  public async ValueTask<OneOf<Success, ServerBusyProblem>> GenerateReport<T, TD>(PipeWriter pipeWriter, TD data,
     CancellationToken cancellationToken = default)
     where T : ComponentBase where TD : class
   {
@@ -73,7 +76,7 @@ public sealed class ReportService : IReportService, IAsyncDisposable
       return output.ToHtmlString();
     });
 
-    await _browserService.PrintReportFromBrowser(pipeWriter, html, _reportRegistry.DefaultPageSettings, cancellationToken);
+    return await _browserService.PrintReportFromBrowser(pipeWriter, html, _reportRegistry.DefaultPageSettings, cancellationToken);
   }
 
   /// <summary>
@@ -85,7 +88,7 @@ public sealed class ReportService : IReportService, IAsyncDisposable
   /// <param name="cancellationToken"> The cancellation token </param>
   /// <typeparam name="T"> The type of data to use in the report </typeparam>
   /// <returns> The generated report </returns>
-  public async ValueTask GenerateReport<T>(PipeWriter pipeWriter, BlazorReport blazorReport, T? data,
+  public async ValueTask<OneOf<Success, ServerBusyProblem>> GenerateReport<T>(PipeWriter pipeWriter, BlazorReport blazorReport, T? data,
     CancellationToken cancellationToken = default) where T : class
   {
     using var scope = _serviceProvider.CreateScope();
@@ -153,7 +156,7 @@ public sealed class ReportService : IReportService, IAsyncDisposable
 
     var pageSettings = blazorReport.PageSettings ?? _reportRegistry.DefaultPageSettings;
 
-    await _browserService.PrintReportFromBrowser(pipeWriter, html, pageSettings, cancellationToken);
+    return await _browserService.PrintReportFromBrowser(pipeWriter, html, pageSettings, cancellationToken);
   }
 
   /// <summary>
@@ -163,7 +166,7 @@ public sealed class ReportService : IReportService, IAsyncDisposable
   /// <param name="blazorReport"> The report to generate </param>
   /// <param name="cancellationToken"> The cancellation token </param>
   /// <returns> The generated report </returns>
-  public ValueTask GenerateReport(PipeWriter pipeWriter, BlazorReport blazorReport,
+  public ValueTask<OneOf<Success, ServerBusyProblem>> GenerateReport(PipeWriter pipeWriter, BlazorReport blazorReport,
     CancellationToken cancellationToken = default)
   {
     return GenerateReport<object>(pipeWriter, blazorReport, null, cancellationToken);
