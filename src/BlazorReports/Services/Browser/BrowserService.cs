@@ -4,8 +4,11 @@ using System.IO.Pipelines;
 using System.Runtime.InteropServices;
 using BlazorReports.Models;
 using BlazorReports.Services.Browser.Helpers;
+using BlazorReports.Services.Browser.Problems;
 using BlazorReports.Services.Browser.Requests;
 using BlazorReports.Services.Browser.Responses;
+using OneOf;
+using OneOf.Types;
 
 namespace BlazorReports.Services.Browser;
 
@@ -19,8 +22,10 @@ public sealed class BrowserService : IAsyncDisposable
   private readonly BlazorReportsBrowserOptions _browserOptions;
   private Process? _chromiumProcess;
   private Connection? _connection;
-  private readonly ConcurrentStack<BrowserPage> _browserPagePool = new();
   private static DirectoryInfo? _devToolsActivePortDirectory;
+  private readonly ConcurrentStack<BrowserPage> _browserPagePool = new();
+  private int _currentBrowserPagePoolSize;
+  private readonly SemaphoreSlim _poolLock = new(1, 1);
 
   /// <summary>
   /// The connection to the browser
@@ -33,38 +38,90 @@ public sealed class BrowserService : IAsyncDisposable
     _browserOptions = browserOptions;
   }
 
-  internal async ValueTask PrintReportFromBrowser(PipeWriter pipeWriter, string html,
+  internal async ValueTask<OneOf<Success, ServerBusyProblem>> PrintReportFromBrowser(PipeWriter pipeWriter, string html,
     BlazorReportsPageSettings pageSettings, CancellationToken cancellationToken)
   {
     await StartBrowserHeadless(_browser);
-    var browserPage = await GetBrowserPage(cancellationToken);
-    await browserPage.DisplayHtml(html, cancellationToken);
-    await browserPage.ConvertPageToPdf(pipeWriter, pageSettings, cancellationToken);
-    _browserPagePool.Push(browserPage);
+    BrowserPage? browserPage = null;
+
+    var retryCount = 0;
+    const int maxRetryCount = 3;
+    try
+    {
+      while (browserPage is null && retryCount < maxRetryCount)
+      {
+        var result = await GetBrowserPage(cancellationToken);
+        result.Switch(
+          browserPageResult =>
+          {
+            browserPage = browserPageResult;
+          },
+          async poolLimitReached =>
+          {
+            await Task.Delay(_browserOptions.ResponseTimeout.Divide(maxRetryCount), cancellationToken);
+            retryCount++;
+          });
+
+        if (retryCount >= maxRetryCount)
+        {
+          return new ServerBusyProblem();
+        }
+      }
+      if (browserPage is not null)
+      {
+        await browserPage.DisplayHtml(html, cancellationToken);
+        await browserPage.ConvertPageToPdf(pipeWriter, pageSettings, cancellationToken);
+      }
+    }
+    finally
+    {
+      if (browserPage is not null)
+        _browserPagePool.Push(browserPage);
+    }
+
+    return new Success();
   }
 
-  private async ValueTask<BrowserPage> GetBrowserPage(CancellationToken stoppingToken = default)
+  private async ValueTask<OneOf<BrowserPage, PoolLimitReachedProblem>> GetBrowserPage(CancellationToken stoppingToken = default)
   {
     if (_connection is null)
       throw new InvalidOperationException("Browser is not running");
 
-    if (_browserPagePool.TryPop(out var item))
-    {
-      return item;
-    }
+    await _poolLock.WaitAsync(stoppingToken); // Wait for the lock
 
-    var createTargetMessage = new BrowserMessage("Target.createTarget");
-    createTargetMessage.Parameters.Add("url", "about:blank");
-    // createTargetMessage.Parameters.Add("enableBeginFrameControl", true);
-    await _connection.ConnectAsync(stoppingToken);
-    return await _connection.SendAsync<BrowserResultResponse<CreateTargetResponse>, BrowserPage>(
-      createTargetMessage, CreateTargetResponseSerializationContext.Default.BrowserResultResponseCreateTargetResponse,
-      targetResponse =>
+    try
+    {
+      if (_browserPagePool.TryPop(out var item))
       {
-        var pageUrl =
-          $"{_connection.Uri.Scheme}://{_connection.Uri.Host}:{_connection.Uri.Port}/devtools/page/{targetResponse.Result.TargetId}";
-        return Task.FromResult(new BrowserPage(new Uri(pageUrl)));
-      }, stoppingToken);
+        return item;
+      }
+
+      if (_currentBrowserPagePoolSize >= _browserOptions.MaxPoolSize)
+      {
+        return new PoolLimitReachedProblem();
+      }
+
+      var createTargetMessage = new BrowserMessage("Target.createTarget");
+      createTargetMessage.Parameters.Add("url", "about:blank");
+      // createTargetMessage.Parameters.Add("enableBeginFrameControl", true);
+      await _connection.ConnectAsync(stoppingToken);
+      return await _connection.SendAsync(
+        createTargetMessage, CreateTargetResponseSerializationContext.Default.BrowserResultResponseCreateTargetResponse,
+        async targetResponse =>
+        {
+          var pageUrl =
+            $"{_connection.Uri.Scheme}://{_connection.Uri.Host}:{_connection.Uri.Port}/devtools/page/{targetResponse.Result.TargetId}";
+          var browserPage = new BrowserPage(new Uri(pageUrl), _browserOptions);
+          await browserPage.InitializeAsync(stoppingToken);
+          _currentBrowserPagePoolSize++;
+          return browserPage;
+        }, stoppingToken);
+
+    }
+    finally
+    {
+      _poolLock.Release(); // Release the lock
+    }
   }
 
   private async ValueTask StartBrowserHeadless(Browsers browsers)
@@ -114,7 +171,9 @@ public sealed class BrowserService : IAsyncDisposable
       }
 
       var uri = new Uri($"ws://127.0.0.1:{lines[0]}{lines[1]}");
-      _connection = new Connection(uri);
+      var connection = new Connection(uri, _browserOptions.ResponseTimeout);
+      await connection.InitializeAsync();
+      _connection = connection;
     }
     finally
     {

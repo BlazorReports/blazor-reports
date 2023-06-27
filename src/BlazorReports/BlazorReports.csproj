@@ -23,4 +23,8 @@
     <ProjectReference Include="..\BlazorReports.Components\BlazorReports.Components.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="OneOf" Version="3.0.255" />
+  </ItemGroup>
+
 </Project>
