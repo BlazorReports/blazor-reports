@@ -7,15 +7,22 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <Version>0.12.0</Version>
+    <Version>0.13.0</Version>
     <PackageVersion>$(Version)</PackageVersion>
     <Authors>Elvis Nieves Miranda</Authors>
     <PackageTags>Blazor;Reports;Component;convert;pdf;Components</PackageTags>
     <RepositoryUrl>https://github.com/BlazorReports/blazor-reports</RepositoryUrl>
-<!--    <PackageProjectUrl>https://BlazorReports.dev</PackageProjectUrl>-->
+    <!--    <PackageProjectUrl>https://BlazorReports.dev</PackageProjectUrl>-->
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>blazor_reports_logo-128.png</PackageIcon>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <EnablePackageValidation>true</EnablePackageValidation>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="../../README.md" Pack="true" PackagePath="" />
+    <None Include="../../assets/blazor_reports_logo-128.png" Pack="true" PackagePath="" />
+  </ItemGroup>
 </Project>
