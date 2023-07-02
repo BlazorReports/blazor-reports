@@ -2,6 +2,12 @@
 
 Generate PDF reports using Blazor Components. Easily create a report server or generate reports from existing projects.
 
+## Requirements
+
+* .NET 8.0 or later for report server
+* .NET 6.0 or later for Blazor Components shared library
+* Chrome, Chromium, or Edge browser for report generation
+
 ## Basic usage for report server
 
 1. Install the Blazor Reports NuGet package:
