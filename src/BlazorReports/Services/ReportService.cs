@@ -48,8 +48,8 @@ public sealed class ReportService : IReportService, IAsyncDisposable
   /// <typeparam name="T"> The component to use in the report </typeparam>
   /// <typeparam name="TD"> The type of data to use in the report </typeparam>
   /// <returns> The generated report </returns>
-  public async ValueTask<OneOf<Success, ServerBusyProblem, OperationCancelledProblem>> GenerateReport<T, TD>(PipeWriter pipeWriter, TD data,
-    CancellationToken cancellationToken = default)
+  public async ValueTask<OneOf<Success, ServerBusyProblem, OperationCancelledProblem>> GenerateReport<T, TD>(
+    PipeWriter pipeWriter, TD data, CancellationToken cancellationToken = default)
     where T : ComponentBase where TD : class
   {
     using var scope = _serviceProvider.CreateScope();
@@ -76,7 +76,8 @@ public sealed class ReportService : IReportService, IAsyncDisposable
       return output.ToHtmlString();
     });
 
-    return await _browserService.PrintReportFromBrowser(pipeWriter, html, _reportRegistry.DefaultPageSettings, cancellationToken);
+    return await _browserService.PrintReportFromBrowser(pipeWriter, html, _reportRegistry.DefaultPageSettings,
+      cancellationToken);
   }
 
   /// <summary>
@@ -88,37 +89,21 @@ public sealed class ReportService : IReportService, IAsyncDisposable
   /// <param name="cancellationToken"> The cancellation token </param>
   /// <typeparam name="T"> The type of data to use in the report </typeparam>
   /// <returns> The generated report </returns>
-  public async ValueTask<OneOf<Success, ServerBusyProblem, OperationCancelledProblem>> GenerateReport<T>(PipeWriter pipeWriter, BlazorReport blazorReport, T? data,
+  public async ValueTask<OneOf<Success, ServerBusyProblem, OperationCancelledProblem>> GenerateReport<T>(
+    PipeWriter pipeWriter, BlazorReport blazorReport, T? data,
     CancellationToken cancellationToken = default) where T : class
   {
     using var scope = _serviceProvider.CreateScope();
     var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
 
     var baseStyles = string.Empty;
-    if (!string.IsNullOrEmpty(_reportRegistry.BaseStyles))
+    if (!string.IsNullOrEmpty(blazorReport.BaseStyles))
+    {
+      baseStyles = blazorReport.BaseStyles;
+    }
+    else if (!string.IsNullOrEmpty(_reportRegistry.BaseStyles))
     {
       baseStyles = _reportRegistry.BaseStyles;
-    }
-
-    if (!string.IsNullOrEmpty(blazorReport.BaseStylesPath))
-    {
-      baseStyles = await File.ReadAllTextAsync(blazorReport.BaseStylesPath, cancellationToken);
-    }
-
-    var reportAssets = new Dictionary<string, string>();
-    if (!string.IsNullOrEmpty(blazorReport.AssetsPath))
-    {
-      var assetsPath = blazorReport.AssetsPath;
-      var assetsDirectory = new DirectoryInfo(assetsPath);
-      if (assetsDirectory.Exists)
-      {
-        foreach (var file in assetsDirectory.GetFiles())
-        {
-          var fileBytes = await File.ReadAllBytesAsync(file.FullName, cancellationToken);
-          var base64Uri = $"data:image/webp;base64,{Convert.ToBase64String(fileBytes)}";
-          reportAssets.Add(file.Name, base64Uri);
-        }
-      }
     }
 
     var childComponentParameters = new Dictionary<string, object?>();
@@ -127,9 +112,9 @@ public sealed class ReportService : IReportService, IAsyncDisposable
       childComponentParameters.Add("GlobalAssets", _reportRegistry.GlobalAssets);
     }
 
-    if (reportAssets.Count != 0)
+    if (blazorReport.Assets.Count != 0)
     {
-      childComponentParameters.Add("ReportAssets", reportAssets);
+      childComponentParameters.Add("ReportAssets", blazorReport.Assets);
     }
 
     if (data is not null)
@@ -166,8 +151,8 @@ public sealed class ReportService : IReportService, IAsyncDisposable
   /// <param name="blazorReport"> The report to generate </param>
   /// <param name="cancellationToken"> The cancellation token </param>
   /// <returns> The generated report </returns>
-  public ValueTask<OneOf<Success, ServerBusyProblem, OperationCancelledProblem>> GenerateReport(PipeWriter pipeWriter, BlazorReport blazorReport,
-    CancellationToken cancellationToken = default)
+  public ValueTask<OneOf<Success, ServerBusyProblem, OperationCancelledProblem>> GenerateReport(PipeWriter pipeWriter,
+    BlazorReport blazorReport, CancellationToken cancellationToken = default)
   {
     return GenerateReport<object>(pipeWriter, blazorReport, null, cancellationToken);
   }
