@@ -1,3 +1,4 @@
+using BlazorReports.Helpers;
 using Microsoft.Extensions.Options;
 
 namespace BlazorReports.Models;
@@ -26,8 +27,9 @@ public class BlazorReportRegistry
       {
         foreach (var file in assetsDirectory.GetFiles())
         {
+          var contentType = MimeTypes.GetMimeType(file.Name);
           var fileBytes = File.ReadAllBytes(file.FullName);
-          var base64Uri = $"data:image/webp;base64,{Convert.ToBase64String(fileBytes)}";
+          var base64Uri = $"data:{contentType};base64,{Convert.ToBase64String(fileBytes)}";
           GlobalAssets.Add(file.Name, base64Uri);
         }
       }
@@ -76,10 +78,27 @@ public class BlazorReportRegistry
       NormalizedName = normalizedReportName,
       Component = typeof(T),
       Data = null,
-      BaseStylesPath = options?.BaseStylesPath ?? string.Empty,
-      AssetsPath = options?.AssetsPath ?? string.Empty,
       PageSettings = options?.PageSettings
     };
+    if (!string.IsNullOrEmpty(options?.BaseStylesPath))
+    {
+      blazorReport.BaseStyles = File.ReadAllText(options.BaseStylesPath);
+    }
+    if (!string.IsNullOrEmpty(options?.AssetsPath))
+    {
+      var assetsPath = options.AssetsPath;
+      var assetsDirectory = new DirectoryInfo(assetsPath);
+      if (assetsDirectory.Exists)
+      {
+        foreach (var file in assetsDirectory.GetFiles())
+        {
+          var contentType = MimeTypes.GetMimeType(file.Name);
+          var fileBytes = File.ReadAllBytes(file.FullName);
+          var base64Uri = $"data:{contentType};base64,{Convert.ToBase64String(fileBytes)}";
+          blazorReport.Assets.Add(file.Name, base64Uri);
+        }
+      }
+    }
     Reports.Add(normalizedReportName, blazorReport);
     return blazorReport;
   }
@@ -105,10 +124,27 @@ public class BlazorReportRegistry
       NormalizedName = normalizedReportName,
       Component = typeof(T),
       Data = typeof(TD),
-      BaseStylesPath = options?.BaseStylesPath ?? string.Empty,
-      AssetsPath = options?.AssetsPath ?? string.Empty,
       PageSettings = options?.PageSettings
     };
+    if (!string.IsNullOrEmpty(options?.BaseStylesPath))
+    {
+      blazorReport.BaseStyles = File.ReadAllText(options.BaseStylesPath);
+    }
+    if (!string.IsNullOrEmpty(options?.AssetsPath))
+    {
+      var assetsPath = options.AssetsPath;
+      var assetsDirectory = new DirectoryInfo(assetsPath);
+      if (assetsDirectory.Exists)
+      {
+        foreach (var file in assetsDirectory.GetFiles())
+        {
+          var contentType = MimeTypes.GetMimeType(file.Name);
+          var fileBytes = File.ReadAllBytes(file.FullName);
+          var base64Uri = $"data:{contentType};base64,{Convert.ToBase64String(fileBytes)}";
+          blazorReport.Assets.Add(file.Name, base64Uri);
+        }
+      }
+    }
     Reports.Add(normalizedReportName, blazorReport);
     return blazorReport;
   }

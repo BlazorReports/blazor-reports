@@ -25,11 +25,11 @@ public class BlazorReport
   /// <summary>
   /// Base styles path to use for the report.
   /// </summary>
-  public string? BaseStylesPath { get; set; }
+  public string? BaseStyles { get; set; }
   /// <summary>
   /// Assets path to use for the report.
   /// </summary>
-  public string? AssetsPath { get; set; }
+  public Dictionary<string, string> Assets { get; set; } = new();
 
   /// <summary>
   /// The page settings to use for the report.
