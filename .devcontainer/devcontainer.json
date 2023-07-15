@@ -14,8 +14,9 @@
 				"ms-dotnettools.csdevkit@prerelease",
 				"ms-azuretools.vscode-docker",
 				"GitHub.copilot-chat",
-				"GitHub.copilot-nightly",
-				"esbenp.prettier-vscode"
+				"GitHub.copilot",
+				"esbenp.prettier-vscode",
+        "editorconfig.editorconfig"
 			]
 		}
 	},
