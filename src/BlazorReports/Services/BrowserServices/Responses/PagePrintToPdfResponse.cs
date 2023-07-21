@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace BlazorReports.Services.Browser.Responses;
+namespace BlazorReports.Services.BrowserServices.Responses;
 
 /// <summary>
 /// Response returned from the browser request page.printToPdf

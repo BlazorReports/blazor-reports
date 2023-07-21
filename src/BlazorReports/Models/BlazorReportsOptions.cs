@@ -1,5 +1,3 @@
-using BlazorReports.Services.Browser;
-
 namespace BlazorReports.Models;
 
 /// <summary>

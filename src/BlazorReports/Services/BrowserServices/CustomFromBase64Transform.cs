@@ -3,7 +3,7 @@ using System.Buffers.Text;
 using System.Diagnostics;
 using System.Security.Cryptography;
 
-namespace BlazorReports.Services.Browser;
+namespace BlazorReports.Services.BrowserServices;
 
 internal sealed class CustomFromBase64Transform : IDisposable
 {

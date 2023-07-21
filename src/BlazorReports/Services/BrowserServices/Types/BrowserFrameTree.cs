@@ -1,4 +1,4 @@
-namespace BlazorReports.Services.Browser.Types;
+namespace BlazorReports.Services.BrowserServices.Types;
 
 /// <summary>
 /// Browser frame tree

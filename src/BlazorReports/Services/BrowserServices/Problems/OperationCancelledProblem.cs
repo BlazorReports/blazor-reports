@@ -1,4 +1,4 @@
-﻿namespace BlazorReports;
+﻿namespace BlazorReports.Services.BrowserServices.Problems;
 
 /// <summary>
 /// Represents a problem when the operation is cancelled

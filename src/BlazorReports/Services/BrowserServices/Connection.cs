@@ -4,9 +4,9 @@ using System.Diagnostics;
 using System.Net.WebSockets;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
-using BlazorReports.Services.Browser.Requests;
+using BlazorReports.Services.BrowserServices.Requests;
 
-namespace BlazorReports.Services.Browser;
+namespace BlazorReports.Services.BrowserServices;
 
 /// <summary>
 /// Represents a connection to the browser

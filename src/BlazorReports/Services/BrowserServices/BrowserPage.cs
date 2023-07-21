@@ -4,10 +4,10 @@ using System.Security.Cryptography;
 using System.Text;
 using BlazorReports.Enums;
 using BlazorReports.Models;
-using BlazorReports.Services.Browser.Requests;
-using BlazorReports.Services.Browser.Responses;
+using BlazorReports.Services.BrowserServices.Requests;
+using BlazorReports.Services.BrowserServices.Responses;
 
-namespace BlazorReports.Services.Browser;
+namespace BlazorReports.Services.BrowserServices;
 
 /// <summary>
 /// Represents a page in the browser

@@ -1,4 +1,4 @@
-namespace BlazorReports.Services.Browser.Helpers;
+namespace BlazorReports.Services.BrowserServices.Helpers;
 
 /// <summary>
 /// This class searches for the browser executables cross-platform.

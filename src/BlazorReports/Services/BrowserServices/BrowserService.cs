@@ -3,14 +3,14 @@ using System.Diagnostics;
 using System.IO.Pipelines;
 using System.Runtime.InteropServices;
 using BlazorReports.Models;
-using BlazorReports.Services.Browser.Helpers;
-using BlazorReports.Services.Browser.Problems;
-using BlazorReports.Services.Browser.Requests;
-using BlazorReports.Services.Browser.Responses;
+using BlazorReports.Services.BrowserServices.Helpers;
+using BlazorReports.Services.BrowserServices.Problems;
+using BlazorReports.Services.BrowserServices.Requests;
+using BlazorReports.Services.BrowserServices.Responses;
 using OneOf;
 using OneOf.Types;
 
-namespace BlazorReports.Services.Browser;
+namespace BlazorReports.Services.BrowserServices;
 
 /// <summary>
 /// Represents a connection to the browser
@@ -35,7 +35,8 @@ public sealed class BrowserService : IAsyncDisposable
     _browserOptions = browserOptions;
   }
 
-  internal async ValueTask<OneOf<Success, ServerBusyProblem, OperationCancelledProblem>> PrintReportFromBrowser(PipeWriter pipeWriter, string html,
+  internal async ValueTask<OneOf<Success, ServerBusyProblem, OperationCancelledProblem>> PrintReportFromBrowser(
+    PipeWriter pipeWriter, string html,
     BlazorReportsPageSettings pageSettings, CancellationToken cancellationToken)
   {
     await StartBrowserHeadless();
@@ -50,10 +51,7 @@ public sealed class BrowserService : IAsyncDisposable
       {
         var result = await GetBrowserPage(cancellationToken);
         result.Switch(
-          browserPageResult =>
-          {
-            browserPage = browserPageResult;
-          },
+          browserPageResult => { browserPage = browserPageResult; },
           async poolLimitReached =>
           {
             try
@@ -75,6 +73,7 @@ public sealed class BrowserService : IAsyncDisposable
           return new ServerBusyProblem();
         }
       }
+
       if (browserPage is not null)
       {
         await browserPage.DisplayHtml(html, cancellationToken);
@@ -90,7 +89,8 @@ public sealed class BrowserService : IAsyncDisposable
     return new Success();
   }
 
-  private async ValueTask<OneOf<BrowserPage, PoolLimitReachedProblem>> GetBrowserPage(CancellationToken stoppingToken = default)
+  private async ValueTask<OneOf<BrowserPage, PoolLimitReachedProblem>> GetBrowserPage(
+    CancellationToken stoppingToken = default)
   {
     if (_connection is null)
       throw new InvalidOperationException("Browser is not running");
@@ -109,27 +109,34 @@ public sealed class BrowserService : IAsyncDisposable
         return new PoolLimitReachedProblem();
       }
 
-      var createTargetMessage = new BrowserMessage("Target.createTarget");
-      createTargetMessage.Parameters.Add("url", "about:blank");
-      // createTargetMessage.Parameters.Add("enableBeginFrameControl", true);
-      await _connection.ConnectAsync(stoppingToken);
-      return await _connection.SendAsync(
-        createTargetMessage, CreateTargetResponseSerializationContext.Default.BrowserResultResponseCreateTargetResponse,
-        async targetResponse =>
-        {
-          var pageUrl =
-            $"{_connection.Uri.Scheme}://{_connection.Uri.Host}:{_connection.Uri.Port}/devtools/page/{targetResponse.Result.TargetId}";
-          var browserPage = new BrowserPage(new Uri(pageUrl), _browserOptions);
-          await browserPage.InitializeAsync(stoppingToken);
-          _currentBrowserPagePoolSize++;
-          return browserPage;
-        }, stoppingToken);
-
+      return await CreateBrowserPage(stoppingToken);
     }
     finally
     {
       _poolLock.Release(); // Release the lock
     }
+  }
+
+  private async ValueTask<BrowserPage> CreateBrowserPage(CancellationToken stoppingToken = default)
+  {
+    if (_connection is null)
+      throw new InvalidOperationException("Browser is not running");
+
+    var createTargetMessage = new BrowserMessage("Target.createTarget");
+    createTargetMessage.Parameters.Add("url", "about:blank");
+    // createTargetMessage.Parameters.Add("enableBeginFrameControl", true);
+    await _connection.ConnectAsync(stoppingToken);
+    return await _connection.SendAsync(
+      createTargetMessage, CreateTargetResponseSerializationContext.Default.BrowserResultResponseCreateTargetResponse,
+      async targetResponse =>
+      {
+        var pageUrl =
+          $"{_connection.Uri.Scheme}://{_connection.Uri.Host}:{_connection.Uri.Port}/devtools/page/{targetResponse.Result.TargetId}";
+        var browserPage = new BrowserPage(new Uri(pageUrl), _browserOptions);
+        await browserPage.InitializeAsync(stoppingToken);
+        _currentBrowserPagePoolSize++;
+        return browserPage;
+      }, stoppingToken);
   }
 
   private async ValueTask StartBrowserHeadless()
