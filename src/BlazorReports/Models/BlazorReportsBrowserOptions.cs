@@ -1,4 +1,4 @@
-using BlazorReports.Services.Browser;
+using BlazorReports.Services.BrowserServices;
 
 namespace BlazorReports.Models;
 

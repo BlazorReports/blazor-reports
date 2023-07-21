@@ -1,8 +1,8 @@
 using System.IO.Pipelines;
 using BlazorReports.Components;
 using BlazorReports.Models;
-using BlazorReports.Services.Browser;
-using BlazorReports.Services.Browser.Problems;
+using BlazorReports.Services.BrowserServices;
+using BlazorReports.Services.BrowserServices.Problems;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.DependencyInjection;

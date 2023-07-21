@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace BlazorReports.Services.Browser.Requests;
+namespace BlazorReports.Services.BrowserServices.Requests;
 
 /// <summary>
 /// Message sent to the browser

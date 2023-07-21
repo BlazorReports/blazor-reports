@@ -1,24 +1,22 @@
 using System.Runtime.InteropServices;
 using Microsoft.Win32;
 
-namespace BlazorReports.Services.Browser.Helpers;
+namespace BlazorReports.Services.BrowserServices.Helpers;
 
 /// <summary>
-/// This class searches for the Chrome or Chromium executables cross-platform.
+/// This class searches for the Microsoft Edge executables cross-platform.
 /// </summary>
-internal static class ChromeFinder
+internal static class EdgeFinder
 {
   private static readonly bool IsWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
   private static readonly bool IsLinux = RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
   private static readonly bool IsMacOs = RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
 
-  private const string ChromeExecutableNameWin = "chrome.exe";
-  private const string ChromeExecutableNameLinux1 = "google-chrome";
-  private const string ChromeExecutableNameLinux2 = "chrome";
-  private const string ChromeExecutableNameLinux3 = "chromium";
-  private const string ChromeExecutableNameLinux4 = "chromium-browser";
-  private const string ChromeExecutableNameMac1 = "Google Chrome.app/Contents/MacOS/Google Chrome";
-  private const string ChromeExecutableNameMac2 = "Chromium.app/Contents/MacOS/Chromium";
+  private const string EdgeExecutableNameWin = "msedge.exe";
+  private const string ChromeExecutableNameLinux1 = "microsoft-edge-stable";
+  private const string ChromeExecutableNameLinux2 = "microsoft-edge-beta";
+  private const string ChromeExecutableNameLinux3 = "microsoft-edge-dev";
+  private const string ChromeExecutableNameMac = "Microsoft Edge.app/Contents/MacOS/Microsoft Edge";
 
   /// <summary>
   /// Tries to find Chrome
@@ -63,14 +61,14 @@ internal static class ChromeFinder
   {
     if (IsWindows)
     {
-      const string subDirectory = "Google\\Chrome\\Application";
+      const string subDirectory = "Microsoft\\Edge\\Application";
       directories.Add(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), subDirectory));
       directories.Add(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), subDirectory));
     }
     else if (IsLinux)
     {
       directories.AddRange(new[]
-        {"/usr/local/sbin", "/usr/local/bin", "/usr/sbin", "/usr/bin", "/sbin", "/bin", "/opt/google/chrome"});
+        {"/usr/local/sbin", "/usr/local/bin", "/usr/sbin", "/usr/bin", "/sbin", "/bin", "/opt/microsoft/edge"});
     }
     else if (IsMacOs)
     {
@@ -82,11 +80,11 @@ internal static class ChromeFinder
   {
     if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) return null;
     var key = Registry.GetValue(
-      @"HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\App Paths\chrome.exe", "Path",
+      @"HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\App Paths\msedge.exe", "Path",
       string.Empty)?.ToString();
 
     if (key == null) return null;
-    var path = Path.Combine(key, ChromeExecutableNameWin);
+    var path = Path.Combine(key, EdgeExecutableNameWin);
     return File.Exists(path) ? path : null;
   }
 
@@ -96,18 +94,18 @@ internal static class ChromeFinder
 
     if (IsWindows)
     {
-      exeNames.Add(ChromeExecutableNameWin);
+      exeNames.Add(EdgeExecutableNameWin);
     }
     else if (IsLinux)
     {
       exeNames.AddRange(new[]
       {
-        ChromeExecutableNameLinux1, ChromeExecutableNameLinux2, ChromeExecutableNameLinux3, ChromeExecutableNameLinux4
+        ChromeExecutableNameLinux1, ChromeExecutableNameLinux2, ChromeExecutableNameLinux3
       });
     }
     else if (IsMacOs)
     {
-      exeNames.AddRange(new[] {ChromeExecutableNameMac1, ChromeExecutableNameMac2});
+      exeNames.AddRange(new[] {ChromeExecutableNameMac});
     }
 
     return exeNames;

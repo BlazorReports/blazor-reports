@@ -1,4 +1,4 @@
-namespace BlazorReports.Services.Browser;
+namespace BlazorReports.Services.BrowserServices;
 
 /// <summary>
 /// Represents the browser to connect to

@@ -1,7 +1,7 @@
 using System.Text.Json.Serialization;
-using BlazorReports.Services.Browser.Types;
+using BlazorReports.Services.BrowserServices.Types;
 
-namespace BlazorReports.Services.Browser.Responses;
+namespace BlazorReports.Services.BrowserServices.Responses;
 
 /// <summary>
 /// Response returned from the browser request page.getFrameTree
