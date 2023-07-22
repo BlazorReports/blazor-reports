@@ -62,13 +62,33 @@ internal static class EdgeFinder
     if (IsWindows)
     {
       const string subDirectory = "Microsoft\\Edge\\Application";
-      directories.Add(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), subDirectory));
-      directories.Add(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), subDirectory));
+      directories.Add(
+        Path.Combine(
+          Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+          subDirectory
+        )
+      );
+      directories.Add(
+        Path.Combine(
+          Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
+          subDirectory
+        )
+      );
     }
     else if (IsLinux)
     {
-      directories.AddRange(new[]
-        {"/usr/local/sbin", "/usr/local/bin", "/usr/sbin", "/usr/bin", "/sbin", "/bin", "/opt/microsoft/edge"});
+      directories.AddRange(
+        new[]
+        {
+          "/usr/local/sbin",
+          "/usr/local/bin",
+          "/usr/sbin",
+          "/usr/bin",
+          "/sbin",
+          "/bin",
+          "/opt/microsoft/edge"
+        }
+      );
     }
     else if (IsMacOs)
     {
@@ -78,12 +98,18 @@ internal static class EdgeFinder
 
   private static string? GetPathFromRegistry()
   {
-    if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) return null;
-    var key = Registry.GetValue(
-      @"HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\App Paths\msedge.exe", "Path",
-      string.Empty)?.ToString();
+    if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+      return null;
+    var key = Registry
+      .GetValue(
+        @"HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\App Paths\msedge.exe",
+        "Path",
+        string.Empty
+      )
+      ?.ToString();
 
-    if (key == null) return null;
+    if (key == null)
+      return null;
     var path = Path.Combine(key, EdgeExecutableNameWin);
     return File.Exists(path) ? path : null;
   }
@@ -98,14 +124,13 @@ internal static class EdgeFinder
     }
     else if (IsLinux)
     {
-      exeNames.AddRange(new[]
-      {
-        ChromeExecutableNameLinux1, ChromeExecutableNameLinux2, ChromeExecutableNameLinux3
-      });
+      exeNames.AddRange(
+        new[] { ChromeExecutableNameLinux1, ChromeExecutableNameLinux2, ChromeExecutableNameLinux3 }
+      );
     }
     else if (IsMacOs)
     {
-      exeNames.AddRange(new[] {ChromeExecutableNameMac});
+      exeNames.AddRange(new[] { ChromeExecutableNameMac });
     }
 
     return exeNames;

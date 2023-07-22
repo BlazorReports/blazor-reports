@@ -4,7 +4,4 @@ namespace BlazorReports.Services.BrowserServices.Types;
 /// Browser frame
 /// </summary>
 /// <param name="Id"> Frame unique identifier. </param>
-public record BrowserFrame
-(
-  string Id
-);
+public record BrowserFrame(string Id);

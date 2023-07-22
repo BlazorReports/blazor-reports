@@ -10,7 +10,8 @@ public class BlazorReportsPageSettings
   /// <summary>
   /// Orientation of the PDF. Defaults to portrait.
   /// </summary>
-  public BlazorReportsPageOrientation Orientation { get; set; } = BlazorReportsPageOrientation.Portrait;
+  public BlazorReportsPageOrientation Orientation { get; set; } =
+    BlazorReportsPageOrientation.Portrait;
 
   /// <summary>
   /// Top margin in inches. Defaults to 0.4 inches.

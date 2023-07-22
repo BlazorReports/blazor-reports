@@ -15,7 +15,8 @@ namespace BlazorReports.Services.BrowserServices;
 public sealed class BrowserPage : IAsyncDisposable
 {
   private readonly Connection _connection;
-  private static readonly CustomFromBase64Transform Transform = new(FromBase64TransformMode.IgnoreWhiteSpaces);
+  private static readonly CustomFromBase64Transform Transform =
+    new(FromBase64TransformMode.IgnoreWhiteSpaces);
 
   /// <summary>
   /// Creates a new instance of the BrowserPage
@@ -37,7 +38,6 @@ public sealed class BrowserPage : IAsyncDisposable
     await _connection.InitializeAsync(stoppingToken);
   }
 
-
   /// <summary>
   /// Displays the HTML in the browser
   /// </summary>
@@ -56,28 +56,40 @@ public sealed class BrowserPage : IAsyncDisposable
     _connection.SendAsync(cacheMessage);
 
     var getPageFrameTreeMessage = new BrowserMessage("Page.getFrameTree");
-    await _connection.SendAsync(getPageFrameTreeMessage,
-      PageGetFrameTreeResponseSerializationContext.Default.BrowserResultResponsePageGetFrameTreeResponse,
+    await _connection.SendAsync(
+      getPageFrameTreeMessage,
+      PageGetFrameTreeResponseSerializationContext
+        .Default
+        .BrowserResultResponsePageGetFrameTreeResponse,
       response =>
       {
         var pageSetDocumentContentMessage = new BrowserMessage("Page.setDocumentContent");
         pageSetDocumentContentMessage.Parameters.Add("frameId", response.Result.FrameTree.Frame.Id);
         pageSetDocumentContentMessage.Parameters.Add("html", html);
         _connection.SendAsync(pageSetDocumentContentMessage);
-      }, stoppingToken);
+      },
+      stoppingToken
+    );
   }
 
-  internal async ValueTask ConvertPageToPdf(PipeWriter pipeWriter, BlazorReportsPageSettings pageSettings,
-    CancellationToken stoppingToken = default)
+  internal async ValueTask ConvertPageToPdf(
+    PipeWriter pipeWriter,
+    BlazorReportsPageSettings pageSettings,
+    CancellationToken stoppingToken = default
+  )
   {
     await _connection.ConnectAsync(stoppingToken);
     var message = CreatePrintToPdfBrowserMessage(pageSettings);
 
-    await _connection.SendAsync(message,
-      PagePrintToPdfResponseSerializationContext.Default.BrowserResultResponsePagePrintToPdfResponse,
+    await _connection.SendAsync(
+      message,
+      PagePrintToPdfResponseSerializationContext
+        .Default
+        .BrowserResultResponsePagePrintToPdfResponse,
       async pagePrintToPdfResponse =>
       {
-        if (string.IsNullOrEmpty(pagePrintToPdfResponse.Result.Stream)) return;
+        if (string.IsNullOrEmpty(pagePrintToPdfResponse.Result.Stream))
+          return;
 
         var ioReadMessage = new BrowserMessage("IO.read");
         ioReadMessage.Parameters.Add("handle", pagePrintToPdfResponse.Result.Stream);
@@ -86,8 +98,10 @@ public sealed class BrowserPage : IAsyncDisposable
         var finished = false;
         while (true)
         {
-          if (finished) break;
-          await _connection.SendAsync(ioReadMessage,
+          if (finished)
+            break;
+          await _connection.SendAsync(
+            ioReadMessage,
             IoReadResponseSerializationContext.Default.BrowserResultResponseIoReadResponse,
             async ioReadResponse =>
             {
@@ -98,19 +112,32 @@ public sealed class BrowserPage : IAsyncDisposable
                 return;
               }
 
-              await ReadAndTransform(ioReadResponse.Result.Data.AsMemory(), pipeWriter, stoppingToken);
-            }, stoppingToken);
+              await ReadAndTransform(
+                ioReadResponse.Result.Data.AsMemory(),
+                pipeWriter,
+                stoppingToken
+              );
+            },
+            stoppingToken
+          );
         }
 
         // Notify the PipeReader that there is no more data to be written
         await pipeWriter.CompleteAsync();
-      }, stoppingToken);
+      },
+      stoppingToken
+    );
   }
 
-  private static BrowserMessage CreatePrintToPdfBrowserMessage(BlazorReportsPageSettings pageSettings)
+  private static BrowserMessage CreatePrintToPdfBrowserMessage(
+    BlazorReportsPageSettings pageSettings
+  )
   {
     var message = new BrowserMessage("Page.printToPDF");
-    message.Parameters.Add("landscape", pageSettings.Orientation == BlazorReportsPageOrientation.Landscape);
+    message.Parameters.Add(
+      "landscape",
+      pageSettings.Orientation == BlazorReportsPageOrientation.Landscape
+    );
     message.Parameters.Add("paperHeight", pageSettings.PaperHeight);
     message.Parameters.Add("paperWidth", pageSettings.PaperWidth);
     message.Parameters.Add("marginTop", pageSettings.MarginTop);
@@ -123,8 +150,11 @@ public sealed class BrowserPage : IAsyncDisposable
     return message;
   }
 
-  private static async ValueTask ReadAndTransform(ReadOnlyMemory<char> data, PipeWriter writer,
-    CancellationToken stoppingToken)
+  private static async ValueTask ReadAndTransform(
+    ReadOnlyMemory<char> data,
+    PipeWriter writer,
+    CancellationToken stoppingToken
+  )
   {
     if (data.Length == 0)
       return;
@@ -146,7 +176,13 @@ public sealed class BrowserPage : IAsyncDisposable
         var inputBlockMemory = dataBytesSpan.Slice(index, bytesRead);
         index += bytesRead;
 
-        var count = Transform.TransformBlock(inputBlockMemory.Span, 0, bytesRead, writerBuffer.Span, 0);
+        var count = Transform.TransformBlock(
+          inputBlockMemory.Span,
+          0,
+          bytesRead,
+          writerBuffer.Span,
+          0
+        );
         writer.Advance(count);
         var flushResult = await writer.FlushAsync(stoppingToken);
         if (flushResult.IsCanceled || flushResult.IsCompleted)

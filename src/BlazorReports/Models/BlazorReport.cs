@@ -14,18 +14,22 @@ public class BlazorReport
   /// The normalized name of the report.
   /// </summary>
   public required string NormalizedName { get; set; }
+
   /// <summary>
   /// The type of the component to render.
   /// </summary>
   public required Type Component { get; set; }
+
   /// <summary>
   /// The type of the data to pass to the component.
   /// </summary>
   public required Type? Data { get; set; }
+
   /// <summary>
   /// Base styles path to use for the report.
   /// </summary>
   public string? BaseStyles { get; set; }
+
   /// <summary>
   /// Assets path to use for the report.
   /// </summary>

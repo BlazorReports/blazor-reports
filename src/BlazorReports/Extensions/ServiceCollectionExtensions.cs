@@ -16,7 +16,9 @@ public static class ServiceCollectionExtensions
   /// <param name="options"></param>
   /// <returns> The <see cref="IServiceCollection" /> so that additional calls can be chained. </returns>
   public static IServiceCollection AddBlazorReports(
-    this IServiceCollection services, Action<BlazorReportsOptions>? options = null)
+    this IServiceCollection services,
+    Action<BlazorReportsOptions>? options = null
+  )
   {
     services.Configure(options ?? (_ => { }));
     services.AddSingleton<BlazorReportRegistry>();

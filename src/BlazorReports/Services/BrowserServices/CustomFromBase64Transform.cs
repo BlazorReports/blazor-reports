@@ -23,8 +23,13 @@ internal sealed class CustomFromBase64Transform : IDisposable
   public static int InputBlockSize => 4;
   public static int OutputBlockSize => 3;
 
-  public int TransformBlock(ReadOnlySpan<byte> inputBuffer, int inputOffset, int inputCount, Span<byte> outputBuffer,
-    int outputOffset)
+  public int TransformBlock(
+    ReadOnlySpan<byte> inputBuffer,
+    int inputOffset,
+    int inputCount,
+    Span<byte> outputBuffer,
+    int outputOffset
+  )
   {
     // inputCount != InputBlockSize is allowed
     ObjectDisposedException.ThrowIf(_inputBuffer == null, typeof(FromBase64Transform));
@@ -96,10 +101,14 @@ internal sealed class CustomFromBase64Transform : IDisposable
     // FORM FEED    12
     // CR           13
 
-    return value == 32 || ((uint) value - 9 <= (13 - 9));
+    return value == 32 || ((uint)value - 9 <= (13 - 9));
   }
 
-  private void ConvertFromBase64(Span<byte> transformBuffer, Span<byte> outputBuffer, out int written)
+  private void ConvertFromBase64(
+    Span<byte> transformBuffer,
+    Span<byte> outputBuffer,
+    out int written
+  )
   {
     var bytesToTransform = transformBuffer.Length;
     Debug.Assert(bytesToTransform >= 4);
@@ -111,7 +120,12 @@ internal sealed class CustomFromBase64Transform : IDisposable
     transformBuffer[^_inputIndex..].CopyTo(_inputBuffer);
 
     transformBuffer = transformBuffer[..bytesToTransform];
-    var status = Base64.DecodeFromUtf8(transformBuffer, outputBuffer, out var consumed, out written);
+    var status = Base64.DecodeFromUtf8(
+      transformBuffer,
+      outputBuffer,
+      out var consumed,
+      out written
+    );
 
     if (status == OperationStatus.Done)
     {
@@ -179,7 +193,7 @@ internal static class CryptoPool
 #if (NETCOREAPP || NETSTANDARD2_1) && !CP_NO_ZEROMEMORY
       CryptographicOperations.ZeroMemory(array.AsSpan(0, clearSize));
 #else
-                Array.Clear(array, 0, clearSize);
+      Array.Clear(array, 0, clearSize);
 #endif
     }
 

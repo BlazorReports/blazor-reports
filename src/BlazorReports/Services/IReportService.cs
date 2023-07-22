@@ -21,8 +21,15 @@ public interface IReportService
   /// <typeparam name="T"> The component to use in the report </typeparam>
   /// <typeparam name="TD"> The type of data to use in the report </typeparam>
   /// <returns> The generated report </returns>
-  ValueTask<OneOf<Success, ServerBusyProblem, OperationCancelledProblem, BrowserProblem>> GenerateReport<T, TD>(PipeWriter pipeWriter, TD data, CancellationToken cancellationToken = default)
-    where T : ComponentBase where TD : class;
+  ValueTask<
+    OneOf<Success, ServerBusyProblem, OperationCancelledProblem, BrowserProblem>
+  > GenerateReport<T, TD>(
+    PipeWriter pipeWriter,
+    TD data,
+    CancellationToken cancellationToken = default
+  )
+    where T : ComponentBase
+    where TD : class;
 
   /// <summary>
   /// Generates a report using the specified component and data
@@ -33,8 +40,14 @@ public interface IReportService
   /// <param name="cancellationToken"> The cancellation token </param>
   /// <typeparam name="T"> The type of data to use in the report </typeparam>
   /// <returns> The generated report </returns>
-  ValueTask<OneOf<Success, ServerBusyProblem, OperationCancelledProblem, BrowserProblem>> GenerateReport<T>(PipeWriter pipeWriter, BlazorReport blazorReport, T? data,
-    CancellationToken cancellationToken = default)
+  ValueTask<
+    OneOf<Success, ServerBusyProblem, OperationCancelledProblem, BrowserProblem>
+  > GenerateReport<T>(
+    PipeWriter pipeWriter,
+    BlazorReport blazorReport,
+    T? data,
+    CancellationToken cancellationToken = default
+  )
     where T : class;
 
   /// <summary>
@@ -44,8 +57,13 @@ public interface IReportService
   /// <param name="blazorReport"> The report to generate </param>
   /// <param name="cancellationToken"> The cancellation token </param>
   /// <returns> The generated report </returns>
-  ValueTask<OneOf<Success, ServerBusyProblem, OperationCancelledProblem, BrowserProblem>> GenerateReport(PipeWriter pipeWriter, BlazorReport blazorReport,
-    CancellationToken cancellationToken = default);
+  ValueTask<
+    OneOf<Success, ServerBusyProblem, OperationCancelledProblem, BrowserProblem>
+  > GenerateReport(
+    PipeWriter pipeWriter,
+    BlazorReport blazorReport,
+    CancellationToken cancellationToken = default
+  );
 
   /// <summary>
   /// Gets a blazor report by name

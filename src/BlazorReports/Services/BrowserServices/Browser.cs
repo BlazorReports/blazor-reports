@@ -25,8 +25,12 @@ public class Browser : IAsyncDisposable
   private int _currentBrowserPagePoolSize;
   private readonly SemaphoreSlim _poolLock = new(1, 1);
 
-  private Browser(Process chromiumProcess, DirectoryInfo devToolsActivePortDirectory, Connection connection,
-    BlazorReportsBrowserOptions browserOptions)
+  private Browser(
+    Process chromiumProcess,
+    DirectoryInfo devToolsActivePortDirectory,
+    Connection connection,
+    BlazorReportsBrowserOptions browserOptions
+  )
   {
     _chromiumProcess = chromiumProcess;
     _devToolsActivePortDirectory = devToolsActivePortDirectory;
@@ -42,11 +46,14 @@ public class Browser : IAsyncDisposable
   /// <param name="pageSettings"> The page settings </param>
   /// <param name="cancellationToken"> The cancellation token </param>
   /// <returns> The result of the operation </returns>
-  public async ValueTask<OneOf<Success, ServerBusyProblem, OperationCancelledProblem, BrowserProblem>> GenerateReport(
+  public async ValueTask<
+    OneOf<Success, ServerBusyProblem, OperationCancelledProblem, BrowserProblem>
+  > GenerateReport(
     PipeWriter pipeWriter,
     string html,
     BlazorReportsPageSettings pageSettings,
-    CancellationToken cancellationToken)
+    CancellationToken cancellationToken
+  )
   {
     BrowserPage? browserPage = null;
 
@@ -59,19 +66,26 @@ public class Browser : IAsyncDisposable
       {
         var result = await GetBrowserPage(cancellationToken);
         result.Switch(
-          browserPageResult => { browserPage = browserPageResult; },
+          browserPageResult =>
+          {
+            browserPage = browserPageResult;
+          },
           async poolLimitReached =>
           {
             try
             {
-              await Task.Delay(_browserOptions.ResponseTimeout.Divide(maxRetryCount), cancellationToken);
+              await Task.Delay(
+                _browserOptions.ResponseTimeout.Divide(maxRetryCount),
+                cancellationToken
+              );
               retryCount++;
             }
             catch (TaskCanceledException)
             {
               operationCancelled = true;
             }
-          });
+          }
+        );
 
         if (operationCancelled)
           return new OperationCancelledProblem();
@@ -103,7 +117,8 @@ public class Browser : IAsyncDisposable
   /// <param name="stoppingToken"> The stopping token </param>
   /// <returns> The browser page </returns>
   private async ValueTask<OneOf<BrowserPage, PoolLimitReachedProblem>> GetBrowserPage(
-    CancellationToken stoppingToken = default)
+    CancellationToken stoppingToken = default
+  )
   {
     await _poolLock.WaitAsync(stoppingToken); // Wait for the lock
 
@@ -139,7 +154,8 @@ public class Browser : IAsyncDisposable
     // createTargetMessage.Parameters.Add("enableBeginFrameControl", true);
     await _connection.ConnectAsync(stoppingToken);
     return await _connection.SendAsync(
-      createTargetMessage, CreateTargetResponseSerializationContext.Default.BrowserResultResponseCreateTargetResponse,
+      createTargetMessage,
+      CreateTargetResponseSerializationContext.Default.BrowserResultResponseCreateTargetResponse,
       async targetResponse =>
       {
         var pageUrl =
@@ -148,7 +164,9 @@ public class Browser : IAsyncDisposable
         await browserPage.InitializeAsync(stoppingToken);
         _currentBrowserPagePoolSize++;
         return browserPage;
-      }, stoppingToken);
+      },
+      stoppingToken
+    );
   }
 
   /// <summary>
@@ -165,7 +183,9 @@ public class Browser : IAsyncDisposable
       : BrowserFinder.Find(browserOptions.Browser);
 
     if (!File.Exists(browserExecutableLocation))
-      throw new FileNotFoundException($"Could not find browser in location '{browserExecutableLocation}'");
+      throw new FileNotFoundException(
+        $"Could not find browser in location '{browserExecutableLocation}'"
+      );
 
     var temporaryPath = Path.GetTempPath();
     var devToolsDirectory = Path.Combine(temporaryPath, Guid.NewGuid().ToString());
@@ -176,7 +196,11 @@ public class Browser : IAsyncDisposable
     if (File.Exists(devToolsActivePortFile))
       File.Delete(devToolsActivePortFile);
 
-    var chromiumProcess = CreateChromiumProcess(browserExecutableLocation, devToolsDirectory, browserOptions);
+    var chromiumProcess = CreateChromiumProcess(
+      browserExecutableLocation,
+      devToolsDirectory,
+      browserOptions
+    );
     try
     {
       var started = chromiumProcess.Start();
@@ -208,8 +232,11 @@ public class Browser : IAsyncDisposable
   /// <param name="devToolsDirectory"> The directory to store the DevTools files </param>
   /// <param name="browserOptions"> The browser options </param>
   /// <returns> The Chromium process </returns>
-  private static Process CreateChromiumProcess(string chromiumExeFileName, string devToolsDirectory,
-    BlazorReportsBrowserOptions browserOptions)
+  private static Process CreateChromiumProcess(
+    string chromiumExeFileName,
+    string devToolsDirectory,
+    BlazorReportsBrowserOptions browserOptions
+  )
   {
     var chromiumProcess = new Process();
     var defaultChromiumArgument = new List<string>
@@ -256,16 +283,20 @@ public class Browser : IAsyncDisposable
   private static void ChromiumProcess_Exited(object? sender, EventArgs e)
   {
     // Log errors with details
-    if (sender is not Process process) return;
-    if (process.ExitCode == 0) return;
+    if (sender is not Process process)
+      return;
+    if (process.ExitCode == 0)
+      return;
 
     Console.WriteLine($"Chromium process exited with code '{process.ExitCode}'");
     var exception = Marshal.GetExceptionForHR(process.ExitCode);
     Console.WriteLine(exception);
   }
 
-  private static async ValueTask<string[]> ReadDevToolsActiveFile(string devToolsActivePortFile,
-    DirectoryInfo devToolsActivePortDirectory)
+  private static async ValueTask<string[]> ReadDevToolsActiveFile(
+    string devToolsActivePortFile,
+    DirectoryInfo devToolsActivePortDirectory
+  )
   {
     if (devToolsActivePortDirectory is null || !devToolsActivePortDirectory.Exists)
       throw new DirectoryNotFoundException($"The {nameof(_devToolsActivePortDirectory)} is null");
@@ -282,16 +313,22 @@ public class Browser : IAsyncDisposable
 
     void CreatedHandler(object s, FileSystemEventArgs e)
     {
-      if (e.ChangeType != WatcherChangeTypes.Created) return;
+      if (e.ChangeType != WatcherChangeTypes.Created)
+        return;
       HandleFileCreationAsync(devToolsActivePortFile, tcs, 5, 2).ConfigureAwait(false);
     }
 
     watcher.Created += CreatedHandler;
 
     // Register the CancellationToken's callback
-    var callback = cts.Token.Register(() =>
-      tcs.TrySetException(
-        new TimeoutException($"A timeout of 10 seconds exceeded, the file '{devToolsActivePortFile}' did not exist")));
+    var callback = cts.Token.Register(
+      () =>
+        tcs.TrySetException(
+          new TimeoutException(
+            $"A timeout of 10 seconds exceeded, the file '{devToolsActivePortFile}' did not exist"
+          )
+        )
+    );
 
     try
     {
@@ -310,8 +347,12 @@ public class Browser : IAsyncDisposable
     }
   }
 
-  private static async Task HandleFileCreationAsync(string filePath, TaskCompletionSource<string[]> tcs, int maxRetries,
-    int expectedLines)
+  private static async Task HandleFileCreationAsync(
+    string filePath,
+    TaskCompletionSource<string[]> tcs,
+    int maxRetries,
+    int expectedLines
+  )
   {
     var retryCount = 0;
     while (true)
@@ -332,7 +373,9 @@ public class Browser : IAsyncDisposable
         {
           tcs.TrySetException(
             new IOException(
-              $"Unable to read file '{filePath}' with {expectedLines} lines after {maxRetries} attempts"));
+              $"Unable to read file '{filePath}' with {expectedLines} lines after {maxRetries} attempts"
+            )
+          );
           break;
         }
 
@@ -341,7 +384,9 @@ public class Browser : IAsyncDisposable
       catch (IOException)
       {
         if (++retryCount == maxRetries)
-          tcs.TrySetException(new IOException($"Unable to read file '{filePath}' after {maxRetries} attempts"));
+          tcs.TrySetException(
+            new IOException($"Unable to read file '{filePath}' after {maxRetries} attempts")
+          );
         else
           await Task.Delay(TimeSpan.FromMilliseconds(100 * retryCount)); // Exponential backoff
       }

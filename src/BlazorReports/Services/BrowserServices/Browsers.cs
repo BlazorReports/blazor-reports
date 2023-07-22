@@ -9,6 +9,7 @@ public enum Browsers
   /// Google Chrome
   /// </summary>
   Chrome,
+
   /// <summary>
   /// Microsoft Edge
   /// </summary>
