@@ -62,8 +62,7 @@ public class Browser : IAsyncDisposable
     try
     {
       var operationCancelled = false;
-      // ReSharper disable once ConditionIsAlwaysTrueOrFalse - retryCount is incremented in the finally block
-      while (browserPage is null && retryCount < maxRetryCount)
+      while (browserPage is null)
       {
         var result = await GetBrowserPage(cancellationToken);
         var hasPoolLimitReached = result.TryPickT1(out _, out browserPage);
@@ -95,11 +94,8 @@ public class Browser : IAsyncDisposable
         }
       }
 
-      if (browserPage is not null)
-      {
-        await browserPage.DisplayHtml(html, cancellationToken);
-        await browserPage.ConvertPageToPdf(pipeWriter, pageSettings, cancellationToken);
-      }
+      await browserPage.DisplayHtml(html, cancellationToken);
+      await browserPage.ConvertPageToPdf(pipeWriter, pageSettings, cancellationToken);
     }
     finally
     {
