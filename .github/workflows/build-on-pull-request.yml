@@ -1,0 +1,31 @@
+name: Build, validate formatting and run tests
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  format-and-build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Checkout GitHub Action'
+        uses: actions/checkout@main
+
+      - name: Setup dotnet
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.x'
+
+      - name: Install csharpier
+        run: dotnet tool install -g csharpier
+
+      - name: Validate formatting
+        run: dotnet csharpier --check .
+
+      - name: Build BlazorReports
+        run: dotnet build
+
+      - name: Run tests
+        run: dotnet test
