@@ -62,30 +62,29 @@ public class Browser : IAsyncDisposable
     try
     {
       var operationCancelled = false;
+      // ReSharper disable once ConditionIsAlwaysTrueOrFalse - retryCount is incremented in the finally block
       while (browserPage is null && retryCount < maxRetryCount)
       {
         var result = await GetBrowserPage(cancellationToken);
-        result.Switch(
-          browserPageResult =>
+        var hasPoolLimitReached = result.TryPickT1(out _, out browserPage);
+        if (hasPoolLimitReached)
+        {
+          try
           {
-            browserPage = browserPageResult;
-          },
-          async poolLimitReached =>
-          {
-            try
-            {
-              await Task.Delay(
-                _browserOptions.ResponseTimeout.Divide(maxRetryCount),
-                cancellationToken
-              );
-              retryCount++;
-            }
-            catch (TaskCanceledException)
-            {
-              operationCancelled = true;
-            }
+            await Task.Delay(
+              _browserOptions.ResponseTimeout.Divide(maxRetryCount),
+              cancellationToken
+            );
           }
-        );
+          catch (TaskCanceledException)
+          {
+            operationCancelled = true;
+          }
+          finally
+          {
+            retryCount++;
+          }
+        }
 
         if (operationCancelled)
           return new OperationCancelledProblem();
