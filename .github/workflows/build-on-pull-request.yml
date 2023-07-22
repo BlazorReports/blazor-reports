@@ -18,11 +18,14 @@ jobs:
         with:
           dotnet-version: '8.x'
 
+      - name: Install csharpier
+        run: dotnet tool install -g csharpier
+
+      - name: Validate formatting
+        run: dotnet csharpier --check .
+
       - name: Build BlazorReports
         run: dotnet build
-
-      - name: Validate csharpier formatting
-        run: dotnet csharpier --check .
 
       - name: Run tests
         run: dotnet test
