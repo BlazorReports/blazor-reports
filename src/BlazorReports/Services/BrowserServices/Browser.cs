@@ -188,7 +188,11 @@ public class Browser : IAsyncDisposable
       {
         var pageUrl =
           $"{_connection.Uri.Scheme}://{_connection.Uri.Host}:{_connection.Uri.Port}/devtools/page/{targetResponse.Result.TargetId}";
-        var browserPage = new BrowserPage(targetResponse.Result.TargetId, new Uri(pageUrl), _browserOptions);
+        var browserPage = new BrowserPage(
+          targetResponse.Result.TargetId,
+          new Uri(pageUrl),
+          _browserOptions
+        );
         await browserPage.InitializeAsync(stoppingToken);
         _currentBrowserPagePoolSize++;
         return browserPage;
