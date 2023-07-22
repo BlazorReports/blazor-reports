@@ -56,6 +56,7 @@ public class Browser : IAsyncDisposable
   )
   {
     BrowserPage? browserPage = null;
+    var browserPagedDisposed = false;
 
     var retryCount = 0;
     const int maxRetryCount = 3;
@@ -94,12 +95,22 @@ public class Browser : IAsyncDisposable
         }
       }
 
-      await browserPage.DisplayHtml(html, cancellationToken);
-      await browserPage.ConvertPageToPdf(pipeWriter, pageSettings, cancellationToken);
+      try
+      {
+        await browserPage.DisplayHtml(html, cancellationToken);
+        await browserPage.ConvertPageToPdf(pipeWriter, pageSettings, cancellationToken);
+      }
+      catch (Exception e)
+      {
+        await DisposeBrowserPage(browserPage);
+        browserPagedDisposed = true;
+        Console.WriteLine(e);
+        return new BrowserProblem();
+      }
     }
     finally
     {
-      if (browserPage is not null)
+      if (browserPage is not null && !browserPagedDisposed)
         _browserPagePool.Push(browserPage);
     }
 
@@ -137,6 +148,28 @@ public class Browser : IAsyncDisposable
     }
   }
 
+  private async ValueTask DisposeBrowserPage(BrowserPage browserPage)
+  {
+    await _poolLock.WaitAsync();
+
+    try
+    {
+      if (_browserPagePool.Contains(browserPage))
+        return;
+      await browserPage.DisposeAsync();
+      _currentBrowserPagePoolSize--;
+
+      var closeTargetMessage = new BrowserMessage("Target.closeTarget");
+      closeTargetMessage.Parameters.Add("targetId", browserPage.TargetId);
+      await _connection.ConnectAsync();
+      _connection.SendAsync(closeTargetMessage);
+    }
+    finally
+    {
+      _poolLock.Release();
+    }
+  }
+
   /// <summary>
   /// Creates a new browser page
   /// </summary>
@@ -155,7 +188,11 @@ public class Browser : IAsyncDisposable
       {
         var pageUrl =
           $"{_connection.Uri.Scheme}://{_connection.Uri.Host}:{_connection.Uri.Port}/devtools/page/{targetResponse.Result.TargetId}";
-        var browserPage = new BrowserPage(new Uri(pageUrl), _browserOptions);
+        var browserPage = new BrowserPage(
+          targetResponse.Result.TargetId,
+          new Uri(pageUrl),
+          _browserOptions
+        );
         await browserPage.InitializeAsync(stoppingToken);
         _currentBrowserPagePoolSize++;
         return browserPage;

@@ -14,18 +14,24 @@ namespace BlazorReports.Services.BrowserServices;
 /// </summary>
 public sealed class BrowserPage : IAsyncDisposable
 {
+  /// <summary>
+  /// The id of the page in the browser
+  /// </summary>
+  public readonly string TargetId;
   private readonly Connection _connection;
-  private static readonly CustomFromBase64Transform Transform =
-    new(FromBase64TransformMode.IgnoreWhiteSpaces);
+  private readonly CustomFromBase64Transform _transform;
 
   /// <summary>
   /// Creates a new instance of the BrowserPage
   /// </summary>
+  /// <param name="targetId"> The id of the page in the browser</param>
   /// <param name="uri"> The uri of the page</param>
   /// <param name="browserOptions"> The browser options</param>
-  public BrowserPage(Uri uri, BlazorReportsBrowserOptions browserOptions)
+  public BrowserPage(string targetId, Uri uri, BlazorReportsBrowserOptions browserOptions)
   {
+    TargetId = targetId;
     _connection = new Connection(uri, browserOptions.ResponseTimeout);
+    _transform = new CustomFromBase64Transform(FromBase64TransformMode.IgnoreWhiteSpaces);
   }
 
   /// <summary>
@@ -150,7 +156,7 @@ public sealed class BrowserPage : IAsyncDisposable
     return message;
   }
 
-  private static async ValueTask ReadAndTransform(
+  private async ValueTask ReadAndTransform(
     ReadOnlyMemory<char> data,
     PipeWriter writer,
     CancellationToken stoppingToken
@@ -176,7 +182,7 @@ public sealed class BrowserPage : IAsyncDisposable
         var inputBlockMemory = dataBytesSpan.Slice(index, bytesRead);
         index += bytesRead;
 
-        var count = Transform.TransformBlock(
+        var count = _transform.TransformBlock(
           inputBlockMemory.Span,
           0,
           bytesRead,
@@ -194,7 +200,7 @@ public sealed class BrowserPage : IAsyncDisposable
     {
       sharedPool.Return(dataBytes);
       sharedPool.Return(inputBlock);
-      Transform.Reset();
+      _transform.Reset();
     }
   }
 
@@ -212,6 +218,6 @@ public sealed class BrowserPage : IAsyncDisposable
   public async ValueTask DisposeAsync()
   {
     await _connection.DisposeAsync();
-    Transform.Dispose();
+    _transform.Dispose();
   }
 }

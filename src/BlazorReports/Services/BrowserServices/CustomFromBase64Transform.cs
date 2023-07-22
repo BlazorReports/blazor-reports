@@ -5,16 +5,10 @@ using System.Security.Cryptography;
 
 namespace BlazorReports.Services.BrowserServices;
 
-internal sealed class CustomFromBase64Transform : IDisposable
+internal sealed class CustomFromBase64Transform(FromBase64TransformMode whitespaces) : IDisposable
 {
   private byte[] _inputBuffer = new byte[4];
   private int _inputIndex;
-  private readonly FromBase64TransformMode _whitespaces;
-
-  public CustomFromBase64Transform(FromBase64TransformMode whitespaces)
-  {
-    _whitespaces = whitespaces;
-  }
 
   // A buffer with size 32 is stack allocated, to cover common cases and benefit from JIT's optimizations.
   private const int StackAllocSize = 32;
@@ -71,7 +65,7 @@ internal sealed class CustomFromBase64Transform : IDisposable
   {
     _inputBuffer.AsSpan(0, _inputIndex).CopyTo(transformBuffer);
 
-    if (_whitespaces == FromBase64TransformMode.DoNotIgnoreWhiteSpaces)
+    if (whitespaces == FromBase64TransformMode.DoNotIgnoreWhiteSpaces)
     {
       inputBuffer.CopyTo(transformBuffer[_inputIndex..]);
       return transformBuffer[..(_inputIndex + inputBuffer.Length)];
