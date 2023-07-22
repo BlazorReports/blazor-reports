@@ -9,10 +9,12 @@ public class BlazorReportRegistrationOptions
   /// The name of the report. This is utilized to generate the route for the report.
   /// </summary>
   public string? ReportName { get; set; }
+
   /// <summary>
   /// Base styles path for the report.
   /// </summary>
   public string? BaseStylesPath { get; set; }
+
   /// <summary>
   /// Assets path for the report.
   /// </summary>

@@ -71,7 +71,9 @@ public class BlazorReportRegistry
     var normalizedReportName = reportNameToUse.ToLowerInvariant().Trim();
 
     if (Reports.ContainsKey(normalizedReportName))
-      throw new InvalidOperationException($"Report with name {normalizedReportName} already exists");
+      throw new InvalidOperationException(
+        $"Report with name {normalizedReportName} already exists"
+      );
     var blazorReport = new BlazorReport
     {
       Name = reportNameToUse,
@@ -117,7 +119,9 @@ public class BlazorReportRegistry
     var normalizedReportName = reportNameToUse.ToLowerInvariant().Trim();
 
     if (Reports.ContainsKey(normalizedReportName))
-      throw new InvalidOperationException($"Report with name {normalizedReportName} already exists");
+      throw new InvalidOperationException(
+        $"Report with name {normalizedReportName} already exists"
+      );
     var blazorReport = new BlazorReport
     {
       Name = reportNameToUse,

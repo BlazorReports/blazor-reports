@@ -48,9 +48,15 @@ public sealed class ReportService : IReportService, IAsyncDisposable
   /// <typeparam name="T"> The component to use in the report </typeparam>
   /// <typeparam name="TD"> The type of data to use in the report </typeparam>
   /// <returns> The generated report </returns>
-  public async ValueTask<OneOf<Success, ServerBusyProblem, OperationCancelledProblem, BrowserProblem>> GenerateReport<T, TD>(
-    PipeWriter pipeWriter, TD data, CancellationToken cancellationToken = default)
-    where T : ComponentBase where TD : class
+  public async ValueTask<
+    OneOf<Success, ServerBusyProblem, OperationCancelledProblem, BrowserProblem>
+  > GenerateReport<T, TD>(
+    PipeWriter pipeWriter,
+    TD data,
+    CancellationToken cancellationToken = default
+  )
+    where T : ComponentBase
+    where TD : class
   {
     using var scope = _serviceProvider.CreateScope();
     var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
@@ -63,9 +69,9 @@ public sealed class ReportService : IReportService, IAsyncDisposable
 
     var componentParameters = new Dictionary<string, object?>
     {
-      {"BaseStyles", baseStyles},
-      {"Data", data},
-      {"GlobalAssets", _reportRegistry.GlobalAssets}
+      { "BaseStyles", baseStyles },
+      { "Data", data },
+      { "GlobalAssets", _reportRegistry.GlobalAssets }
     };
 
     await using var htmlRenderer = new HtmlRenderer(scope.ServiceProvider, loggerFactory);
@@ -77,15 +83,18 @@ public sealed class ReportService : IReportService, IAsyncDisposable
     });
 
     var result = await _browserService.GetBrowser();
-    var hasBrowserStartProblem =
-      result.TryPickT1(out var browserStartProblem, out var browser);
+    var hasBrowserStartProblem = result.TryPickT1(out var browserStartProblem, out var browser);
     if (hasBrowserStartProblem)
     {
       return browserStartProblem;
     }
 
-    return await browser.GenerateReport(pipeWriter, html, _reportRegistry.DefaultPageSettings,
-      cancellationToken);
+    return await browser.GenerateReport(
+      pipeWriter,
+      html,
+      _reportRegistry.DefaultPageSettings,
+      cancellationToken
+    );
   }
 
   /// <summary>
@@ -97,9 +106,15 @@ public sealed class ReportService : IReportService, IAsyncDisposable
   /// <param name="cancellationToken"> The cancellation token </param>
   /// <typeparam name="T"> The type of data to use in the report </typeparam>
   /// <returns> The generated report </returns>
-  public async ValueTask<OneOf<Success, ServerBusyProblem, OperationCancelledProblem, BrowserProblem>> GenerateReport<T>(
-    PipeWriter pipeWriter, BlazorReport blazorReport, T? data,
-    CancellationToken cancellationToken = default) where T : class
+  public async ValueTask<
+    OneOf<Success, ServerBusyProblem, OperationCancelledProblem, BrowserProblem>
+  > GenerateReport<T>(
+    PipeWriter pipeWriter,
+    BlazorReport blazorReport,
+    T? data,
+    CancellationToken cancellationToken = default
+  )
+    where T : class
   {
     using var scope = _serviceProvider.CreateScope();
     var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
@@ -115,7 +130,10 @@ public sealed class ReportService : IReportService, IAsyncDisposable
     }
 
     var childComponentParameters = new Dictionary<string, object?>();
-    if (blazorReport.Component.BaseType == typeof(BlazorReportsBase) && _reportRegistry.GlobalAssets.Count != 0)
+    if (
+      blazorReport.Component.BaseType == typeof(BlazorReportsBase)
+      && _reportRegistry.GlobalAssets.Count != 0
+    )
     {
       childComponentParameters.Add("GlobalAssets", _reportRegistry.GlobalAssets);
     }
@@ -150,15 +168,13 @@ public sealed class ReportService : IReportService, IAsyncDisposable
     var pageSettings = blazorReport.PageSettings ?? _reportRegistry.DefaultPageSettings;
 
     var result = await _browserService.GetBrowser();
-    var hasBrowserStartProblem =
-      result.TryPickT1(out var browserStartProblem, out var browser);
+    var hasBrowserStartProblem = result.TryPickT1(out var browserStartProblem, out var browser);
     if (hasBrowserStartProblem)
     {
       return browserStartProblem;
     }
 
     return await browser.GenerateReport(pipeWriter, html, pageSettings, cancellationToken);
-
   }
 
   /// <summary>
@@ -168,8 +184,13 @@ public sealed class ReportService : IReportService, IAsyncDisposable
   /// <param name="blazorReport"> The report to generate </param>
   /// <param name="cancellationToken"> The cancellation token </param>
   /// <returns> The generated report </returns>
-  public ValueTask<OneOf<Success, ServerBusyProblem, OperationCancelledProblem, BrowserProblem>> GenerateReport(PipeWriter pipeWriter,
-    BlazorReport blazorReport, CancellationToken cancellationToken = default)
+  public ValueTask<
+    OneOf<Success, ServerBusyProblem, OperationCancelledProblem, BrowserProblem>
+  > GenerateReport(
+    PipeWriter pipeWriter,
+    BlazorReport blazorReport,
+    CancellationToken cancellationToken = default
+  )
   {
     return GenerateReport<object>(pipeWriter, blazorReport, null, cancellationToken);
   }

@@ -9,6 +9,7 @@ public class BlazorReportsOptions
   /// The path to the base styles file to use in this report
   /// </summary>
   public string? BaseStylesPath { get; set; }
+
   /// <summary>
   /// The path to the assets folder to use in this report
   /// </summary>
@@ -18,6 +19,7 @@ public class BlazorReportsOptions
   /// The options for the browser
   /// </summary>
   public BlazorReportsBrowserOptions BrowserOptions { get; set; } = new();
+
   /// <summary>
   /// Settings for generating a PDF
   /// </summary>

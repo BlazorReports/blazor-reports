@@ -4,7 +4,4 @@ namespace BlazorReports.Services.BrowserServices.Types;
 /// Browser frame tree
 /// </summary>
 /// <param name="Frame"> Frame information for this tree item. </param>
-public record BrowserFrameTree
-(
-  BrowserFrame Frame
-);
+public record BrowserFrameTree(BrowserFrame Frame);

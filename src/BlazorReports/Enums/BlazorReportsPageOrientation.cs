@@ -9,6 +9,7 @@ public enum BlazorReportsPageOrientation
   /// Landscape orientation
   /// </summary>
   Landscape,
+
   /// <summary>
   /// Portrait orientation
   /// </summary>

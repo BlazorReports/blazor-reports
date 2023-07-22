@@ -64,13 +64,33 @@ internal static class ChromeFinder
     if (IsWindows)
     {
       const string subDirectory = "Google\\Chrome\\Application";
-      directories.Add(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), subDirectory));
-      directories.Add(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), subDirectory));
+      directories.Add(
+        Path.Combine(
+          Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+          subDirectory
+        )
+      );
+      directories.Add(
+        Path.Combine(
+          Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
+          subDirectory
+        )
+      );
     }
     else if (IsLinux)
     {
-      directories.AddRange(new[]
-        {"/usr/local/sbin", "/usr/local/bin", "/usr/sbin", "/usr/bin", "/sbin", "/bin", "/opt/google/chrome"});
+      directories.AddRange(
+        new[]
+        {
+          "/usr/local/sbin",
+          "/usr/local/bin",
+          "/usr/sbin",
+          "/usr/bin",
+          "/sbin",
+          "/bin",
+          "/opt/google/chrome"
+        }
+      );
     }
     else if (IsMacOs)
     {
@@ -80,12 +100,18 @@ internal static class ChromeFinder
 
   private static string? GetPathFromRegistry()
   {
-    if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) return null;
-    var key = Registry.GetValue(
-      @"HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\App Paths\chrome.exe", "Path",
-      string.Empty)?.ToString();
+    if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+      return null;
+    var key = Registry
+      .GetValue(
+        @"HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\App Paths\chrome.exe",
+        "Path",
+        string.Empty
+      )
+      ?.ToString();
 
-    if (key == null) return null;
+    if (key == null)
+      return null;
     var path = Path.Combine(key, ChromeExecutableNameWin);
     return File.Exists(path) ? path : null;
   }
@@ -100,14 +126,19 @@ internal static class ChromeFinder
     }
     else if (IsLinux)
     {
-      exeNames.AddRange(new[]
-      {
-        ChromeExecutableNameLinux1, ChromeExecutableNameLinux2, ChromeExecutableNameLinux3, ChromeExecutableNameLinux4
-      });
+      exeNames.AddRange(
+        new[]
+        {
+          ChromeExecutableNameLinux1,
+          ChromeExecutableNameLinux2,
+          ChromeExecutableNameLinux3,
+          ChromeExecutableNameLinux4
+        }
+      );
     }
     else if (IsMacOs)
     {
-      exeNames.AddRange(new[] {ChromeExecutableNameMac1, ChromeExecutableNameMac2});
+      exeNames.AddRange(new[] { ChromeExecutableNameMac1, ChromeExecutableNameMac2 });
     }
 
     return exeNames;

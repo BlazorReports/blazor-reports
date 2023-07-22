@@ -5,7 +5,4 @@ namespace BlazorReports.Services.BrowserServices.Responses;
 /// </summary>
 /// <param name="Result"> The result of the request</param>
 /// <typeparam name="T"> The type of the result</typeparam>
-public record BrowserResultResponse<T>
-(
-  T Result
-);
+public record BrowserResultResponse<T>(T Result);

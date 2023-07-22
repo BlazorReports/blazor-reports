@@ -29,7 +29,8 @@ public sealed class BrowserService : IAsyncDisposable
   public async ValueTask<OneOf<Browser, BrowserProblem>> GetBrowser()
   {
     // If there's already a connection, no need to start a new browser instance
-    if (_browser is not null) return _browser;
+    if (_browser is not null)
+      return _browser;
 
     // Try to get the lock
     await _browserLock.WaitAsync();
@@ -37,7 +38,8 @@ public sealed class BrowserService : IAsyncDisposable
     try
     {
       // Check again to make sure a browser instance wasn't created while waiting for the lock
-      if (_browser is not null) return _browser;
+      if (_browser is not null)
+        return _browser;
 
       _browser = await Browser.CreateBrowser(_browserOptions);
       return _browser;

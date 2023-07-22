@@ -17,7 +17,8 @@ internal sealed class Connection : IAsyncDisposable
   private readonly ArrayPool<byte> _bufferPool = ArrayPool<byte>.Shared;
   private readonly SemaphoreSlim _sendSignal = new(0);
   private readonly ConcurrentQueue<BrowserMessage> _sendQueue = new();
-  private readonly ConcurrentDictionary<int, TaskCompletionSource<JsonDocument>> _responseTasks = new();
+  private readonly ConcurrentDictionary<int, TaskCompletionSource<JsonDocument>> _responseTasks =
+    new();
   private const int BufferSize = 100 * 1024;
   private int _lastMessageId;
   private Task? _sendTask;
@@ -47,7 +48,8 @@ internal sealed class Connection : IAsyncDisposable
     await _connectionLock.WaitAsync(stoppingToken);
     try
     {
-      if (_webSocket.State is not WebSocketState.None) return;
+      if (_webSocket.State is not WebSocketState.None)
+        return;
 
       await _webSocket.ConnectAsync(Uri, stoppingToken);
 
@@ -65,8 +67,8 @@ internal sealed class Connection : IAsyncDisposable
   /// </summary>
   public async ValueTask ConnectAsync(CancellationToken stoppingToken = default)
   {
-
-    if (_webSocket.State is WebSocketState.Open) return;
+    if (_webSocket.State is WebSocketState.Open)
+      return;
 
     await _connectionLock.WaitAsync(stoppingToken);
 
@@ -97,12 +99,20 @@ internal sealed class Connection : IAsyncDisposable
       {
         await _sendSignal.WaitAsync(_cts.Token);
 
-        if (!_sendQueue.TryDequeue(out var message)) continue;
+        if (!_sendQueue.TryDequeue(out var message))
+          continue;
 
-        var buffer =
-          JsonSerializer.SerializeToUtf8Bytes(message, BrowserMessageSerializationContext.Default.BrowserMessage);
+        var buffer = JsonSerializer.SerializeToUtf8Bytes(
+          message,
+          BrowserMessageSerializationContext.Default.BrowserMessage
+        );
         buffer.CopyTo(bufferToSendMemory);
-        await _webSocket.SendAsync(bufferToSendMemory[..buffer.Length], WebSocketMessageType.Text, true, _cts.Token);
+        await _webSocket.SendAsync(
+          bufferToSendMemory[..buffer.Length],
+          WebSocketMessageType.Text,
+          true,
+          _cts.Token
+        );
       }
     }
     catch (OperationCanceledException)
@@ -130,7 +140,8 @@ internal sealed class Connection : IAsyncDisposable
         var messageReceived = bufferToReceiveMemory[..result.Count];
         var jsonDoc = JsonDocument.Parse(messageReceived);
         var root = jsonDoc.RootElement;
-        if (!root.TryGetProperty("id", out var methodElement)) continue;
+        if (!root.TryGetProperty("id", out var methodElement))
+          continue;
 
         var id = methodElement.GetInt32();
 
@@ -163,7 +174,10 @@ internal sealed class Connection : IAsyncDisposable
     }
   }
 
-  private async Task<JsonDocument> SendMessageAsync(BrowserMessage message, CancellationToken stoppingToken)
+  private async Task<JsonDocument> SendMessageAsync(
+    BrowserMessage message,
+    CancellationToken stoppingToken
+  )
   {
     message.Id = Interlocked.Increment(ref _lastMessageId);
     _sendQueue.Enqueue(message);
@@ -186,8 +200,11 @@ internal sealed class Connection : IAsyncDisposable
     }
   }
 
-  public async ValueTask<T> SendAsync<T>(BrowserMessage message, JsonTypeInfo<T> returnDataJsonTypeInfo,
-    CancellationToken stoppingToken = default)
+  public async ValueTask<T> SendAsync<T>(
+    BrowserMessage message,
+    JsonTypeInfo<T> returnDataJsonTypeInfo,
+    CancellationToken stoppingToken = default
+  )
   {
     var response = await SendMessageAsync(message, stoppingToken);
     var parsedMessage = response.RootElement.Deserialize(returnDataJsonTypeInfo);
@@ -251,7 +268,6 @@ internal sealed class Connection : IAsyncDisposable
     _sendSignal.Release();
   }
 
-
   public async ValueTask SendAsync<T>(
     BrowserMessage message,
     JsonTypeInfo<T> returnDataJsonTypeInfo,
@@ -266,8 +282,7 @@ internal sealed class Connection : IAsyncDisposable
     var tcs = new TaskCompletionSource<JsonDocument>();
     _responseTasks[message.Id] = tcs;
 
-    if (await Task.WhenAny(tcs.Task, Task.Delay(_responseTimeout, stoppingToken)) ==
-        tcs.Task)
+    if (await Task.WhenAny(tcs.Task, Task.Delay(_responseTimeout, stoppingToken)) == tcs.Task)
     {
       var response = await tcs.Task;
       var parsedMessage = response.RootElement.Deserialize(returnDataJsonTypeInfo);

@@ -13,6 +13,7 @@ internal static class BlazorReportsClientPolicy
       .OrResult(message => message.StatusCode == HttpStatusCode.NotFound)
       .WaitAndRetryAsync(3, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)));
   }
+
   public static IAsyncPolicy<HttpResponseMessage> GetCircuitBreakerPolicy()
   {
     return HttpPolicyExtensions

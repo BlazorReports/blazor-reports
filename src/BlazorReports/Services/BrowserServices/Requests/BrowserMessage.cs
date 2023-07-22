@@ -12,10 +12,12 @@ internal class BrowserMessage(string method)
   /// The id of the message
   /// </summary>
   public int Id { get; set; }
+
   /// <summary>
   /// The method executed by the browser
   /// </summary>
   public string Method { get; } = method;
+
   /// <summary>
   /// The parameters that we want to feed into the browser
   /// </summary>
@@ -31,6 +33,4 @@ internal class BrowserMessage(string method)
 [JsonSerializable(typeof(string))]
 [JsonSerializable(typeof(bool))]
 [JsonSerializable(typeof(double))]
-internal partial class BrowserMessageSerializationContext : JsonSerializerContext
-{
-}
+internal partial class BrowserMessageSerializationContext : JsonSerializerContext { }

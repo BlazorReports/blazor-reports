@@ -25,8 +25,12 @@ public static class ReportExtensions
   /// <typeparam name="TD"></typeparam>
   /// <returns> The <see cref="IApplicationBuilder" />. </returns>
   /// <exception cref="InvalidOperationException"></exception>
-  public static IApplicationBuilder RegisterBlazorReport<T, TD>(this IApplicationBuilder app,
-    Action<BlazorReportRegistrationOptions>? setupAction = null) where T : ComponentBase where TD : class
+  public static IApplicationBuilder RegisterBlazorReport<T, TD>(
+    this IApplicationBuilder app,
+    Action<BlazorReportRegistrationOptions>? setupAction = null
+  )
+    where T : ComponentBase
+    where TD : class
   {
     using var serviceScope = app.ApplicationServices.CreateScope();
     var options = GetReportRegistrationOptions(serviceScope, setupAction);
@@ -45,8 +49,11 @@ public static class ReportExtensions
   /// <typeparam name="T"></typeparam>
   /// <returns> The <see cref="IApplicationBuilder" />. </returns>
   /// <exception cref="InvalidOperationException"></exception>
-  public static IApplicationBuilder RegisterBlazorReport<T>(this IApplicationBuilder app,
-    Action<BlazorReportRegistrationOptions>? setupAction = null) where T : ComponentBase
+  public static IApplicationBuilder RegisterBlazorReport<T>(
+    this IApplicationBuilder app,
+    Action<BlazorReportRegistrationOptions>? setupAction = null
+  )
+    where T : ComponentBase
   {
     using var serviceScope = app.ApplicationServices.CreateScope();
     var options = GetReportRegistrationOptions(serviceScope, setupAction);
@@ -65,8 +72,11 @@ public static class ReportExtensions
   /// <typeparam name="T"> The component type. </typeparam>
   /// <returns> The <see cref="RouteHandlerBuilder" />. </returns>
   /// <exception cref="InvalidOperationException"></exception>
-  public static RouteHandlerBuilder MapBlazorReport<T>(this IEndpointRouteBuilder endpoints,
-    Action<BlazorReportRegistrationOptions>? setupAction = null) where T : ComponentBase
+  public static RouteHandlerBuilder MapBlazorReport<T>(
+    this IEndpointRouteBuilder endpoints,
+    Action<BlazorReportRegistrationOptions>? setupAction = null
+  )
+    where T : ComponentBase
   {
     using var serviceScope = endpoints.ServiceProvider.CreateScope();
     var options = GetReportRegistrationOptions(serviceScope, setupAction);
@@ -74,12 +84,25 @@ public static class ReportExtensions
     var reportRegistry = serviceScope.ServiceProvider.GetRequiredService<BlazorReportRegistry>();
     var blazorReport = reportRegistry.AddReport<T>(options);
 
-    return endpoints.MapPost($"reports/{blazorReport.NormalizedName}",
-        async ([FromServices] IReportService reportService, HttpContext context, CancellationToken token) =>
+    return endpoints
+      .MapPost(
+        $"reports/{blazorReport.NormalizedName}",
+        async (
+          [FromServices] IReportService reportService,
+          HttpContext context,
+          CancellationToken token
+        ) =>
         {
           context.Response.ContentType = "application/pdf";
-          context.Response.Headers.Append("Content-Disposition", $"attachment; filename=\"{blazorReport.Name}.pdf\"");
-          var result = await reportService.GenerateReport(context.Response.BodyWriter, blazorReport, token);
+          context.Response.Headers.Append(
+            "Content-Disposition",
+            $"attachment; filename=\"{blazorReport.Name}.pdf\""
+          );
+          var result = await reportService.GenerateReport(
+            context.Response.BodyWriter,
+            blazorReport,
+            token
+          );
           result.Switch(
             success => { },
             async serverBusyProblem =>
@@ -96,8 +119,10 @@ public static class ReportExtensions
             {
               context.Response.StatusCode = StatusCodes.Status500InternalServerError;
               await context.Response.BodyWriter.CompleteAsync();
-            });
-        })
+            }
+          );
+        }
+      )
       .Produces<FileStreamHttpResult>(200, "application/pdf")
       .Produces(StatusCodes.Status503ServiceUnavailable);
   }
@@ -111,8 +136,12 @@ public static class ReportExtensions
   /// <typeparam name="TD"> The data type. </typeparam>
   /// <returns> The <see cref="RouteHandlerBuilder" />. </returns>
   /// <exception cref="InvalidOperationException"></exception>
-  public static RouteHandlerBuilder MapBlazorReport<T, TD>(this IEndpointRouteBuilder endpoints,
-    Action<BlazorReportRegistrationOptions>? setupAction = null) where T : ComponentBase where TD : class
+  public static RouteHandlerBuilder MapBlazorReport<T, TD>(
+    this IEndpointRouteBuilder endpoints,
+    Action<BlazorReportRegistrationOptions>? setupAction = null
+  )
+    where T : ComponentBase
+    where TD : class
   {
     using var serviceScope = endpoints.ServiceProvider.CreateScope();
     var options = GetReportRegistrationOptions(serviceScope, setupAction);
@@ -120,12 +149,27 @@ public static class ReportExtensions
     var reportRegistry = serviceScope.ServiceProvider.GetRequiredService<BlazorReportRegistry>();
     var blazorReport = reportRegistry.AddReport<T, TD>(options);
 
-    return endpoints.MapPost($"reports/{blazorReport.NormalizedName}",
-        async (TD data, [FromServices] IReportService reportService, HttpContext context, CancellationToken token) =>
+    return endpoints
+      .MapPost(
+        $"reports/{blazorReport.NormalizedName}",
+        async (
+          TD data,
+          [FromServices] IReportService reportService,
+          HttpContext context,
+          CancellationToken token
+        ) =>
         {
           context.Response.ContentType = "application/pdf";
-          context.Response.Headers.Append("Content-Disposition", $"attachment; filename=\"{blazorReport.Name}.pdf\"");
-          var result = await reportService.GenerateReport(context.Response.BodyWriter, blazorReport, data, token);
+          context.Response.Headers.Append(
+            "Content-Disposition",
+            $"attachment; filename=\"{blazorReport.Name}.pdf\""
+          );
+          var result = await reportService.GenerateReport(
+            context.Response.BodyWriter,
+            blazorReport,
+            data,
+            token
+          );
           result.Switch(
             success => { },
             async serverBusyProblem =>
@@ -142,17 +186,23 @@ public static class ReportExtensions
             {
               context.Response.StatusCode = StatusCodes.Status500InternalServerError;
               await context.Response.BodyWriter.CompleteAsync();
-            });
-        })
+            }
+          );
+        }
+      )
       .Produces<FileStreamHttpResult>(200, "application/pdf")
       .Produces(StatusCodes.Status503ServiceUnavailable);
   }
 
-  private static BlazorReportRegistrationOptions GetReportRegistrationOptions(IServiceScope serviceScope,
-    Action<BlazorReportRegistrationOptions>? setupAction = null)
+  private static BlazorReportRegistrationOptions GetReportRegistrationOptions(
+    IServiceScope serviceScope,
+    Action<BlazorReportRegistrationOptions>? setupAction = null
+  )
   {
     var options = new BlazorReportRegistrationOptions();
-    var globalOptions = serviceScope.ServiceProvider.GetRequiredService<IOptionsSnapshot<BlazorReportsOptions>>().Value;
+    var globalOptions = serviceScope.ServiceProvider
+      .GetRequiredService<IOptionsSnapshot<BlazorReportsOptions>>()
+      .Value;
     options.PageSettings = globalOptions.PageSettings;
     setupAction?.Invoke(options);
     return options;

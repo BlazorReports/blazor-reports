@@ -9,18 +9,11 @@ namespace BlazorReports.Services.BrowserServices.Responses;
 /// <param name="Base64Encoded"> Set if the data is base64-encoded</param>
 /// <param name="Data"> Data that were read.</param>
 /// <param name="Eof"> Set if the end-of-file condition occured while reading.</param>
-public record IoReadResponse
-(
-  bool Base64Encoded,
-  string Data,
-  bool Eof
-);
+public record IoReadResponse(bool Base64Encoded, string Data, bool Eof);
 
 /// <summary>
 /// The serialization context for the IoReadResponse
 /// </summary>
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
 [JsonSerializable(typeof(BrowserResultResponse<IoReadResponse>))]
-internal partial class IoReadResponseSerializationContext : JsonSerializerContext
-{
-}
+internal partial class IoReadResponseSerializationContext : JsonSerializerContext { }
