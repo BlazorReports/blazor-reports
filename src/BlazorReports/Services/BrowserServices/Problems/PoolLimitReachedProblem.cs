@@ -3,4 +3,4 @@
 /// <summary>
 /// Represents a problem when the pool limit is reached
 /// </summary>
-internal readonly record struct PoolLimitReachedProblem();
+internal readonly record struct PoolLimitReachedProblem;

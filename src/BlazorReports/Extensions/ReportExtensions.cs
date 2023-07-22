@@ -91,6 +91,11 @@ public static class ReportExtensions
             {
               context.Response.StatusCode = StatusCodes.Status499ClientClosedRequest;
               await context.Response.BodyWriter.CompleteAsync();
+            },
+            async browserProblem =>
+            {
+              context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+              await context.Response.BodyWriter.CompleteAsync();
             });
         })
       .Produces<FileStreamHttpResult>(200, "application/pdf")
@@ -131,6 +136,11 @@ public static class ReportExtensions
             async operationCancelledProblem =>
             {
               context.Response.StatusCode = StatusCodes.Status499ClientClosedRequest;
+              await context.Response.BodyWriter.CompleteAsync();
+            },
+            async browserProblem =>
+            {
+              context.Response.StatusCode = StatusCodes.Status500InternalServerError;
               await context.Response.BodyWriter.CompleteAsync();
             });
         })
