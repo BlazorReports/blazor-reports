@@ -1,6 +1,5 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
-using System.IO.Pipelines;
 using System.Runtime.InteropServices;
 using BlazorReports.Models;
 using BlazorReports.Services.BrowserServices.Helpers;
@@ -8,7 +7,6 @@ using BlazorReports.Services.BrowserServices.Problems;
 using BlazorReports.Services.BrowserServices.Requests;
 using BlazorReports.Services.BrowserServices.Responses;
 using OneOf;
-using OneOf.Types;
 
 namespace BlazorReports.Services.BrowserServices;
 
@@ -39,92 +37,13 @@ public class Browser : IAsyncDisposable
   }
 
   /// <summary>
-  /// Prints the report from the browser
-  /// </summary>
-  /// <param name="pipeWriter"> The pipe writer </param>
-  /// <param name="html"> The html string to convert to a report </param>
-  /// <param name="pageSettings"> The page settings </param>
-  /// <param name="cancellationToken"> The cancellation token </param>
-  /// <returns> The result of the operation </returns>
-  public async ValueTask<
-    OneOf<Success, ServerBusyProblem, OperationCancelledProblem, BrowserProblem>
-  > GenerateReport(
-    PipeWriter pipeWriter,
-    string html,
-    BlazorReportsPageSettings pageSettings,
-    CancellationToken cancellationToken
-  )
-  {
-    BrowserPage? browserPage = null;
-    var browserPagedDisposed = false;
-
-    var retryCount = 0;
-    const int maxRetryCount = 3;
-    try
-    {
-      var operationCancelled = false;
-      while (browserPage is null)
-      {
-        var result = await GetBrowserPage(cancellationToken);
-        var hasPoolLimitReached = result.TryPickT1(out _, out browserPage);
-        if (hasPoolLimitReached)
-        {
-          try
-          {
-            await Task.Delay(
-              _browserOptions.ResponseTimeout.Divide(maxRetryCount),
-              cancellationToken
-            );
-          }
-          catch (TaskCanceledException)
-          {
-            operationCancelled = true;
-          }
-          finally
-          {
-            retryCount++;
-          }
-        }
-
-        if (operationCancelled)
-          return new OperationCancelledProblem();
-
-        if (retryCount >= maxRetryCount)
-        {
-          return new ServerBusyProblem();
-        }
-      }
-
-      try
-      {
-        await browserPage.DisplayHtml(html, cancellationToken);
-        await browserPage.ConvertPageToPdf(pipeWriter, pageSettings, cancellationToken);
-      }
-      catch (Exception e)
-      {
-        await DisposeBrowserPage(browserPage);
-        browserPagedDisposed = true;
-        Console.WriteLine(e);
-        return new BrowserProblem();
-      }
-    }
-    finally
-    {
-      if (browserPage is not null && !browserPagedDisposed)
-        _browserPagePool.Push(browserPage);
-    }
-
-    return new Success();
-  }
-
-  /// <summary>
   /// Gets the browser page
   /// </summary>
   /// <param name="stoppingToken"> The stopping token </param>
   /// <returns> The browser page </returns>
-  private async ValueTask<OneOf<BrowserPage, PoolLimitReachedProblem>> GetBrowserPage(
-    CancellationToken stoppingToken = default
-  )
+  internal async ValueTask<
+    OneOf<BrowserPage, PoolLimitReachedProblem, BrowserProblem>
+  > GetBrowserPage(CancellationToken stoppingToken = default)
   {
     await _poolLock.WaitAsync(stoppingToken); // Wait for the lock
 
@@ -140,7 +59,15 @@ public class Browser : IAsyncDisposable
         return new PoolLimitReachedProblem();
       }
 
-      return await CreateBrowserPage(stoppingToken);
+      try
+      {
+        return await CreateBrowserPage(stoppingToken);
+      }
+      catch (Exception e)
+      {
+        Console.WriteLine(e);
+        return new BrowserProblem();
+      }
     }
     finally
     {
@@ -148,7 +75,16 @@ public class Browser : IAsyncDisposable
     }
   }
 
-  private async ValueTask DisposeBrowserPage(BrowserPage browserPage)
+  /// <summary>
+  /// Returns the browser page to the pool
+  /// </summary>
+  /// <param name="browserPage"> The browser page to return </param>
+  internal void ReturnBrowserPage(BrowserPage browserPage)
+  {
+    _browserPagePool.Push(browserPage);
+  }
+
+  internal async ValueTask DisposeBrowserPage(BrowserPage browserPage)
   {
     await _poolLock.WaitAsync();
 

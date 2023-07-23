@@ -103,24 +103,19 @@ public static class ReportExtensions
             blazorReport,
             token
           );
-          result.Switch(
-            success => { },
-            async serverBusyProblem =>
-            {
-              context.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
-              await context.Response.BodyWriter.CompleteAsync();
-            },
-            async operationCancelledProblem =>
-            {
-              context.Response.StatusCode = StatusCodes.Status499ClientClosedRequest;
-              await context.Response.BodyWriter.CompleteAsync();
-            },
-            async browserProblem =>
-            {
-              context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-              await context.Response.BodyWriter.CompleteAsync();
-            }
+
+          var errorStatusCode = result.Match(
+            _ => (int?)null,
+            _ => StatusCodes.Status503ServiceUnavailable,
+            _ => StatusCodes.Status499ClientClosedRequest,
+            _ => StatusCodes.Status500InternalServerError
           );
+
+          if (errorStatusCode is not null)
+          {
+            context.Response.StatusCode = errorStatusCode.Value;
+            await context.Response.BodyWriter.CompleteAsync();
+          }
         }
       )
       .Produces<FileStreamHttpResult>(200, "application/pdf")
@@ -170,24 +165,19 @@ public static class ReportExtensions
             data,
             token
           );
-          result.Switch(
-            success => { },
-            async serverBusyProblem =>
-            {
-              context.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
-              await context.Response.BodyWriter.CompleteAsync();
-            },
-            async operationCancelledProblem =>
-            {
-              context.Response.StatusCode = StatusCodes.Status499ClientClosedRequest;
-              await context.Response.BodyWriter.CompleteAsync();
-            },
-            async browserProblem =>
-            {
-              context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-              await context.Response.BodyWriter.CompleteAsync();
-            }
+
+          var errorStatusCode = result.Match(
+            _ => (int?)null,
+            _ => StatusCodes.Status503ServiceUnavailable,
+            _ => StatusCodes.Status499ClientClosedRequest,
+            _ => StatusCodes.Status500InternalServerError
           );
+
+          if (errorStatusCode is not null)
+          {
+            context.Response.StatusCode = errorStatusCode.Value;
+            await context.Response.BodyWriter.CompleteAsync();
+          }
         }
       )
       .Produces<FileStreamHttpResult>(200, "application/pdf")
