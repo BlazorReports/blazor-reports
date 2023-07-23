@@ -65,6 +65,9 @@ internal sealed class Connection : IAsyncDisposable
   /// <summary>
   /// Connects to the browser
   /// </summary>
+  /// <param name="stoppingToken"> Token to stop the task</param>
+  /// <returns> A task that represents the asynchronous operation</returns>
+  /// <exception cref="Exception"> Thrown when the connection could not be established</exception>
   public async ValueTask ConnectAsync(CancellationToken stoppingToken = default)
   {
     if (_webSocket.State is WebSocketState.Open)
@@ -72,15 +75,30 @@ internal sealed class Connection : IAsyncDisposable
 
     await _connectionLock.WaitAsync(stoppingToken);
 
+    var retries = 3;
     try
     {
-      await _webSocket.ConnectAsync(Uri, stoppingToken);
-    }
-    catch (Exception)
-    {
-      _webSocket.Dispose();
-      _webSocket = new ClientWebSocket();
-      await _webSocket.ConnectAsync(Uri, stoppingToken);
+      while(retries > 0)
+      {
+        try
+        {
+          await _webSocket.ConnectAsync(Uri, stoppingToken);
+          retries = 0; // connection successful, no more retries needed
+        }
+        catch (Exception)
+        {
+          _webSocket.Dispose();
+          _webSocket = new ClientWebSocket();
+
+          retries--; // decrease remaining retries
+
+          if(retries > 0) // don't delay if no more retries left
+            await Task.Delay(TimeSpan.FromSeconds(3), stoppingToken); // wait for 3 seconds before next attempt
+        }
+      }
+
+      if (_webSocket.State is not WebSocketState.Open)
+        throw new Exception("Unable to establish the WebSocket connection after multiple attempts.");
     }
     finally
     {
