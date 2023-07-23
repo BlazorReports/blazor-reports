@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.IO.Pipelines;
 using System.Runtime.InteropServices;
 using BlazorReports.Models;
 using BlazorReports.Services.BrowserServices.Helpers;
@@ -7,13 +8,14 @@ using BlazorReports.Services.BrowserServices.Problems;
 using BlazorReports.Services.BrowserServices.Requests;
 using BlazorReports.Services.BrowserServices.Responses;
 using OneOf;
+using OneOf.Types;
 
 namespace BlazorReports.Services.BrowserServices;
 
 /// <summary>
 /// Represents a browser instance
 /// </summary>
-public class Browser : IAsyncDisposable
+internal sealed class Browser : IAsyncDisposable
 {
   private readonly DirectoryInfo _devToolsActivePortDirectory;
   private readonly Process _chromiumProcess;
@@ -36,12 +38,92 @@ public class Browser : IAsyncDisposable
     _browserOptions = browserOptions;
   }
 
+  public async ValueTask<
+    OneOf<Success, ServerBusyProblem, OperationCancelledProblem, BrowserProblem>
+  > GenerateReport(
+    PipeWriter pipeWriter,
+    string html,
+    BlazorReportsPageSettings pageSettings,
+    CancellationToken cancellationToken
+  )
+  {
+    BrowserPage? browserPage = null;
+    var browserPagedDisposed = false;
+    var retryCount = 0;
+    const int maxRetryCount = 3;
+    try
+    {
+      var operationCancelled = false;
+      while (browserPage is null)
+      {
+        var result = await GetBrowserPage(cancellationToken);
+        var hasPoolLimitReached = result.TryPickT1(out _, out var browserPageOrProblem);
+        if (hasPoolLimitReached)
+        {
+          try
+          {
+            await Task.Delay(
+              _browserOptions.ResponseTimeout.Divide(maxRetryCount),
+              cancellationToken
+            );
+          }
+          catch (TaskCanceledException)
+          {
+            operationCancelled = true;
+          }
+          finally
+          {
+            retryCount++;
+          }
+        }
+
+        var hasBrowserProblem = browserPageOrProblem.TryPickT1(
+          out var browserProblem,
+          out browserPage
+        );
+        if (hasBrowserProblem)
+        {
+          // Failed to get a browser page
+          return browserProblem;
+        }
+
+        if (operationCancelled)
+          return new OperationCancelledProblem();
+
+        if (retryCount >= maxRetryCount)
+        {
+          return new ServerBusyProblem();
+        }
+      }
+
+      try
+      {
+        await browserPage.DisplayHtml(html, cancellationToken);
+        await browserPage.ConvertPageToPdf(pipeWriter, pageSettings, cancellationToken);
+      }
+      catch (Exception e)
+      {
+        await DisposeBrowserPage(browserPage);
+        browserPagedDisposed = true;
+        Console.WriteLine(e);
+        return new BrowserProblem();
+      }
+    }
+    finally
+    {
+      if (browserPage is not null && !browserPagedDisposed)
+        ReturnBrowserPage(browserPage);
+    }
+
+    return new Success();
+  }
+
   /// <summary>
   /// Gets the browser page
   /// </summary>
   /// <param name="stoppingToken"> The stopping token </param>
   /// <returns> The browser page </returns>
-  internal async ValueTask<
+  private async ValueTask<
     OneOf<BrowserPage, PoolLimitReachedProblem, BrowserProblem>
   > GetBrowserPage(CancellationToken stoppingToken = default)
   {
@@ -54,7 +136,7 @@ public class Browser : IAsyncDisposable
         return item;
       }
 
-      if (_currentBrowserPagePoolSize >= _browserOptions.MaxPoolSize)
+      if (_currentBrowserPagePoolSize >= _browserOptions.MaxBrowserPagePoolSize)
       {
         return new PoolLimitReachedProblem();
       }
@@ -79,12 +161,12 @@ public class Browser : IAsyncDisposable
   /// Returns the browser page to the pool
   /// </summary>
   /// <param name="browserPage"> The browser page to return </param>
-  internal void ReturnBrowserPage(BrowserPage browserPage)
+  private void ReturnBrowserPage(BrowserPage browserPage)
   {
     _browserPagePool.Push(browserPage);
   }
 
-  internal async ValueTask DisposeBrowserPage(BrowserPage browserPage)
+  private async ValueTask DisposeBrowserPage(BrowserPage browserPage)
   {
     await _poolLock.WaitAsync();
 
@@ -378,6 +460,5 @@ public class Browser : IAsyncDisposable
     await _connection.DisposeAsync();
     if (_devToolsActivePortDirectory.Exists)
       Directory.Delete(_devToolsActivePortDirectory.FullName, true);
-    GC.SuppressFinalize(this);
   }
 }

@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.IO.Pipelines;
 using BlazorReports.Models;
 using BlazorReports.Services.BrowserServices.Problems;
@@ -9,11 +10,13 @@ namespace BlazorReports.Services.BrowserServices;
 /// <summary>
 /// Represents a connection to the browser
 /// </summary>
-public sealed class BrowserService : IAsyncDisposable
+internal sealed class BrowserService : IAsyncDisposable
 {
   private readonly BlazorReportsBrowserOptions _browserOptions;
-  private readonly SemaphoreSlim _browserLock = new(1, 1);
-  private Browser? _browser;
+  private readonly ConcurrentQueue<Browser> _browserQueue = new();
+  private readonly SemaphoreSlim _semaphore;
+  private readonly SemaphoreSlim _browserStartLock = new(1, 1);
+  private int _currentBrowserPoolSize;
 
   /// <summary>
   /// The connection to the browser
@@ -22,6 +25,7 @@ public sealed class BrowserService : IAsyncDisposable
   public BrowserService(BlazorReportsBrowserOptions browserOptions)
   {
     _browserOptions = browserOptions;
+    _semaphore = new SemaphoreSlim(0, browserOptions.MaxBrowserPoolSize);
   }
 
   /// <summary>
@@ -42,118 +46,71 @@ public sealed class BrowserService : IAsyncDisposable
   )
   {
     var browserGetResult = await GetBrowser();
-    var hasBrowserStartProblem = browserGetResult.TryPickT1(
+    var hasBrowserPoolLimitReachedProblem = browserGetResult.TryPickT1(
+      out _,
+      out var browserOrBrowserProblem
+    );
+    if (hasBrowserPoolLimitReachedProblem)
+      return new ServerBusyProblem();
+
+    var hasBrowserStartProblem = browserOrBrowserProblem.TryPickT1(
       out var browserStartProblem,
       out var browser
     );
     if (hasBrowserStartProblem)
-    {
       return browserStartProblem;
-    }
 
-    BrowserPage? browserPage = null;
-    var browserPagedDisposed = false;
-
-    var retryCount = 0;
-    const int maxRetryCount = 3;
-    try
-    {
-      var operationCancelled = false;
-      while (browserPage is null)
-      {
-        var result = await browser.GetBrowserPage(cancellationToken);
-        var hasPoolLimitReached = result.TryPickT1(out _, out var browserPageOrProblem);
-        if (hasPoolLimitReached)
-        {
-          try
-          {
-            await Task.Delay(
-              _browserOptions.ResponseTimeout.Divide(maxRetryCount),
-              cancellationToken
-            );
-          }
-          catch (TaskCanceledException)
-          {
-            operationCancelled = true;
-          }
-          finally
-          {
-            retryCount++;
-          }
-        }
-
-        var hasBrowserProblem = browserPageOrProblem.TryPickT1(
-          out var browserProblem,
-          out browserPage
-        );
-        if (hasBrowserProblem)
-        {
-          // Failed to get a browser page
-          return browserProblem;
-        }
-
-        if (operationCancelled)
-          return new OperationCancelledProblem();
-
-        if (retryCount >= maxRetryCount)
-        {
-          return new ServerBusyProblem();
-        }
-      }
-
-      try
-      {
-        await browserPage.DisplayHtml(html, cancellationToken);
-        await browserPage.ConvertPageToPdf(pipeWriter, pageSettings, cancellationToken);
-      }
-      catch (Exception e)
-      {
-        await browser.DisposeBrowserPage(browserPage);
-        browserPagedDisposed = true;
-        Console.WriteLine(e);
-        return new BrowserProblem();
-      }
-    }
-    finally
-    {
-      if (browserPage is not null && !browserPagedDisposed)
-        browser.ReturnBrowserPage(browserPage);
-    }
-
-    return new Success();
+    return await browser.GenerateReport(pipeWriter, html, pageSettings, cancellationToken);
   }
 
   /// <summary>
   /// Gets a browser instance
   /// </summary>
   /// <returns> The browser instance </returns>
-  private async ValueTask<OneOf<Browser, BrowserProblem>> GetBrowser()
+  private async ValueTask<OneOf<Browser, PoolLimitReachedProblem, BrowserProblem>> GetBrowser()
   {
-    // If there's already a connection, no need to start a new browser instance
-    if (_browser is not null)
-      return _browser;
+    while (_currentBrowserPoolSize < _browserOptions.MaxBrowserPoolSize)
+    {
+      await _browserStartLock.WaitAsync();
+      try
+      {
+        if (_currentBrowserPoolSize >= _browserOptions.MaxBrowserPoolSize)
+          break;
+        var browser = await Browser.CreateBrowser(_browserOptions);
+        _browserQueue.Enqueue(browser);
+        _currentBrowserPoolSize++;
+        _semaphore.Release();
+        return browser;
+      }
+      finally
+      {
+        _browserStartLock.Release();
+      }
+    }
 
-    // Try to get the lock
-    await _browserLock.WaitAsync();
+    // This will block if there are no available slots
+    await _semaphore.WaitAsync();
 
     try
     {
-      // Check again to make sure a browser instance wasn't created while waiting for the lock
-      if (_browser is not null)
-        return _browser;
+      var retryCount = 0;
+      while (retryCount < 3)
+      {
+        _browserQueue.TryDequeue(out var browser);
+        if (browser is not null)
+        {
+          _browserQueue.Enqueue(browser);
+          return browser;
+        }
+        retryCount++;
+        await Task.Delay(TimeSpan.FromSeconds(5));
+      }
 
-      _browser = await Browser.CreateBrowser(_browserOptions);
-      return _browser;
-    }
-    catch (Exception)
-    {
-      // If there was an error, make sure to set the browser to null
-      return new BrowserProblem();
+      return new PoolLimitReachedProblem();
     }
     finally
     {
-      // Release the lock
-      _browserLock.Release();
+      _semaphore.Release();
     }
   }
 
@@ -162,7 +119,7 @@ public sealed class BrowserService : IAsyncDisposable
   /// </summary>
   public async ValueTask DisposeAsync()
   {
-    if (_browser != null)
-      await _browser.DisposeAsync();
+    foreach (var browser in _browserQueue)
+      await browser.DisposeAsync();
   }
 }

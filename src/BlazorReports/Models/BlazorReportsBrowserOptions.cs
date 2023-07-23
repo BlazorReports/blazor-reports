@@ -23,9 +23,14 @@ public class BlazorReportsBrowserOptions
   public bool NoSandbox { get; set; }
 
   /// <summary>
-  /// Sets the maximum pool size for the browser. Defaults to 10
+  /// Sets the maximum pool size for the browser. Defaults to 4
   /// </summary>
-  public int MaxPoolSize { get; set; } = 10;
+  public int MaxBrowserPoolSize { get; set; } = 4;
+
+  /// <summary>
+  /// Sets the maximum pool size for the browser pages. Defaults to 10
+  /// </summary>
+  public int MaxBrowserPagePoolSize { get; set; } = 10;
 
   /// <summary>
   /// Sets the response timeout for the browser. Defaults to 30 seconds
