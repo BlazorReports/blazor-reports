@@ -209,7 +209,7 @@ public class Browser : IAsyncDisposable
     var chromiumProcess = new Process();
     var defaultChromiumArgument = new List<string>
     {
-      // "--headless=new",
+      "--headless=new",
       "--disable-gpu",
       "--hide-scrollbars",
       "--mute-audio",
