@@ -78,7 +78,7 @@ internal sealed class Connection : IAsyncDisposable
     var retries = 3;
     try
     {
-      while(retries > 0)
+      while (retries > 0)
       {
         try
         {
@@ -92,13 +92,15 @@ internal sealed class Connection : IAsyncDisposable
 
           retries--; // decrease remaining retries
 
-          if(retries > 0) // don't delay if no more retries left
+          if (retries > 0) // don't delay if no more retries left
             await Task.Delay(TimeSpan.FromSeconds(3), stoppingToken); // wait for 3 seconds before next attempt
         }
       }
 
       if (_webSocket.State is not WebSocketState.Open)
-        throw new Exception("Unable to establish the WebSocket connection after multiple attempts.");
+        throw new Exception(
+          "Unable to establish the WebSocket connection after multiple attempts."
+        );
     }
     finally
     {
