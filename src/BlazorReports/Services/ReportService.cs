@@ -82,14 +82,7 @@ public sealed class ReportService : IReportService, IAsyncDisposable
       return output.ToHtmlString();
     });
 
-    var result = await _browserService.GetBrowser();
-    var hasBrowserStartProblem = result.TryPickT1(out var browserStartProblem, out var browser);
-    if (hasBrowserStartProblem)
-    {
-      return browserStartProblem;
-    }
-
-    return await browser.GenerateReport(
+    return await _browserService.GenerateReport(
       pipeWriter,
       html,
       _reportRegistry.DefaultPageSettings,
@@ -167,14 +160,7 @@ public sealed class ReportService : IReportService, IAsyncDisposable
 
     var pageSettings = blazorReport.PageSettings ?? _reportRegistry.DefaultPageSettings;
 
-    var result = await _browserService.GetBrowser();
-    var hasBrowserStartProblem = result.TryPickT1(out var browserStartProblem, out var browser);
-    if (hasBrowserStartProblem)
-    {
-      return browserStartProblem;
-    }
-
-    return await browser.GenerateReport(pipeWriter, html, pageSettings, cancellationToken);
+    return await _browserService.GenerateReport(pipeWriter, html, pageSettings, cancellationToken);
   }
 
   /// <summary>
