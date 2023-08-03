@@ -81,26 +81,23 @@ internal sealed class BrowserService : IAsyncDisposable, IBrowserService
   /// <returns> The browser instance </returns>
   private async ValueTask<OneOf<Browser, PoolLimitReachedProblem, BrowserProblem>> GetBrowser()
   {
-    while (_currentBrowserPoolSize < _browserOptions.MaxBrowserPoolSize)
+    await _browserStartLock.WaitAsync();
+    try
     {
-      await _browserStartLock.WaitAsync();
-      try
+      if (_currentBrowserPoolSize < _browserOptions.MaxBrowserPoolSize)
       {
-        if (_currentBrowserPoolSize >= _browserOptions.MaxBrowserPoolSize)
-          break;
         var browser = await _browserFactory.CreateBrowser(_browserOptions);
         _browserQueue.Enqueue(browser);
         _currentBrowserPoolSize++;
         _browserPoolLock.Release();
         return browser;
       }
-      finally
-      {
-        _browserStartLock.Release();
-      }
+    }
+    finally
+    {
+      _browserStartLock.Release();
     }
 
-    // This will block if there are no available slots
     await _browserPoolLock.WaitAsync();
 
     try
@@ -135,8 +132,7 @@ internal sealed class BrowserService : IAsyncDisposable, IBrowserService
     _logger.LogDebug("Disposing of browser service");
     _browserPoolLock.Dispose();
     _browserStartLock.Dispose();
-    foreach (var browser in _browserQueue)
+    while (_browserQueue.TryDequeue(out var browser))
       await browser.DisposeAsync();
-    _browserQueue.Clear();
   }
 }
