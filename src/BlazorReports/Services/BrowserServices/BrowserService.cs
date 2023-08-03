@@ -18,7 +18,7 @@ internal sealed class BrowserService : IAsyncDisposable, IBrowserService
   private readonly IBrowserFactory _browserFactory;
   private readonly BlazorReportsBrowserOptions _browserOptions;
   private readonly ConcurrentQueue<Browser> _browserQueue = new();
-  private readonly SemaphoreSlim _semaphore;
+  private readonly SemaphoreSlim _browserPoolLock;
   private readonly SemaphoreSlim _browserStartLock = new(1, 1);
   private int _currentBrowserPoolSize;
 
@@ -37,7 +37,7 @@ internal sealed class BrowserService : IAsyncDisposable, IBrowserService
     _logger = logger;
     _browserFactory = browserFactory;
     _browserOptions = options.Value.BrowserOptions;
-    _semaphore = new SemaphoreSlim(0, _browserOptions.MaxBrowserPoolSize);
+    _browserPoolLock = new SemaphoreSlim(0, _browserOptions.MaxBrowserPoolSize);
   }
 
   /// <summary>
@@ -91,7 +91,7 @@ internal sealed class BrowserService : IAsyncDisposable, IBrowserService
         var browser = await _browserFactory.CreateBrowser(_browserOptions);
         _browserQueue.Enqueue(browser);
         _currentBrowserPoolSize++;
-        _semaphore.Release();
+        _browserPoolLock.Release();
         return browser;
       }
       finally
@@ -101,7 +101,7 @@ internal sealed class BrowserService : IAsyncDisposable, IBrowserService
     }
 
     // This will block if there are no available slots
-    await _semaphore.WaitAsync();
+    await _browserPoolLock.WaitAsync();
 
     try
     {
@@ -123,7 +123,7 @@ internal sealed class BrowserService : IAsyncDisposable, IBrowserService
     }
     finally
     {
-      _semaphore.Release();
+      _browserPoolLock.Release();
     }
   }
 
@@ -133,7 +133,10 @@ internal sealed class BrowserService : IAsyncDisposable, IBrowserService
   public async ValueTask DisposeAsync()
   {
     _logger.LogDebug("Disposing of browser service");
+    _browserPoolLock.Dispose();
+    _browserStartLock.Dispose();
     foreach (var browser in _browserQueue)
       await browser.DisposeAsync();
+    _browserQueue.Clear();
   }
 }
