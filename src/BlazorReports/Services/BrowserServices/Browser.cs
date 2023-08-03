@@ -212,7 +212,10 @@ internal sealed class Browser(
   /// </summary>
   public async ValueTask DisposeAsync()
   {
-    logger.LogDebug("Disposing of browser with process id: {ChromiumProcessId}", chromiumProcess.Id);
+    logger.LogDebug(
+      "Disposing of browser with process id: {ChromiumProcessId}",
+      chromiumProcess.Id
+    );
     _poolLock.Dispose();
     foreach (var browserPage in _browserPagePool)
       await browserPage.DisposeAsync();
