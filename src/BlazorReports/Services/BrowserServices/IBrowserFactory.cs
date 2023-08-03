@@ -11,6 +11,6 @@ internal interface IBrowserFactory
   /// Creates a new browser instance
   /// </summary>
   /// <param name="browserOptions"></param>
-  /// <returns></returns>
+  /// <returns> The browser instance </returns>
   ValueTask<Browser> CreateBrowser(BlazorReportsBrowserOptions browserOptions);
 }

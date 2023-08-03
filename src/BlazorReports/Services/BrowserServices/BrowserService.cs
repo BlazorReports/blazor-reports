@@ -63,14 +63,22 @@ internal sealed class BrowserService : IAsyncDisposable, IBrowserService
       out var browserOrBrowserProblem
     );
     if (hasBrowserPoolLimitReachedProblem)
+    {
+      _logger.LogWarning(
+        "Browser pool limit reached and retry time expired, server could not handle request"
+      );
       return new ServerBusyProblem();
+    }
 
     var hasBrowserStartProblem = browserOrBrowserProblem.TryPickT1(
       out var browserStartProblem,
       out var browser
     );
     if (hasBrowserStartProblem)
+    {
+      _logger.LogError("Failed to start browser");
       return browserStartProblem;
+    }
 
     return await browser.GenerateReport(pipeWriter, html, pageSettings, cancellationToken);
   }
@@ -81,25 +89,34 @@ internal sealed class BrowserService : IAsyncDisposable, IBrowserService
   /// <returns> The browser instance </returns>
   private async ValueTask<OneOf<Browser, PoolLimitReachedProblem, BrowserProblem>> GetBrowser()
   {
-    await _browserStartLock.WaitAsync();
-    try
+    if (_currentBrowserPoolSize < _browserOptions.MaxBrowserPoolSize)
     {
-      if (_currentBrowserPoolSize < _browserOptions.MaxBrowserPoolSize)
+      await _browserStartLock.WaitAsync();
+      try
       {
-        var browser = await _browserFactory.CreateBrowser(_browserOptions);
-        _browserQueue.Enqueue(browser);
-        _currentBrowserPoolSize++;
-        _browserPoolLock.Release();
-        return browser;
+        // Check again in case another thread has already created a browser
+        if (_currentBrowserPoolSize < _browserOptions.MaxBrowserPoolSize)
+        {
+          _logger.LogDebug("Creating new browser instance");
+          var browser = await _browserFactory.CreateBrowser(_browserOptions);
+          _browserQueue.Enqueue(browser);
+          _currentBrowserPoolSize++;
+          _browserPoolLock.Release();
+          return browser;
+        }
       }
-    }
-    finally
-    {
-      _browserStartLock.Release();
+      catch (Exception ex)
+      {
+        _logger.LogError(ex, "Failed to create browser");
+        return new BrowserProblem();
+      }
+      finally
+      {
+        _browserStartLock.Release();
+      }
     }
 
     await _browserPoolLock.WaitAsync();
-
     try
     {
       var retryCount = 0;

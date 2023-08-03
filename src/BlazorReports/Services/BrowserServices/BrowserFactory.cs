@@ -9,7 +9,7 @@ namespace BlazorReports.Services.BrowserServices;
 /// <summary>
 /// Factory for creating browser instances
 /// </summary>
-internal class BrowserFactory(
+internal sealed class BrowserFactory(
   ILogger<BrowserFactory> browserFactoryLogger,
   ILogger<Browser> browserLogger
 ) : IBrowserFactory
