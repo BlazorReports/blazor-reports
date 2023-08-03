@@ -7,7 +7,6 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using OneOf;
 using OneOf.Types;
 
@@ -16,27 +15,27 @@ namespace BlazorReports.Services;
 /// <summary>
 /// Service for generating reports
 /// </summary>
-public sealed class ReportService : IReportService, IAsyncDisposable
+public sealed class ReportService : IReportService
 {
   private readonly IServiceProvider _serviceProvider;
   private readonly BlazorReportRegistry _reportRegistry;
-  private readonly BrowserService _browserService;
+  private readonly IBrowserService _browserService;
 
   /// <summary>
   /// Creates a new instance of <see cref="ReportService"/>
   /// </summary>
-  /// <param name="options"> The BlazorReportsOptions </param>
   /// <param name="serviceProvider"> The service provider </param>
   /// <param name="reportRegistry"> The report registry </param>
+  /// <param name="browserService"></param>
   public ReportService(
-    IOptions<BlazorReportsOptions> options,
     IServiceProvider serviceProvider,
-    BlazorReportRegistry reportRegistry
+    BlazorReportRegistry reportRegistry,
+    IBrowserService browserService
   )
   {
     _serviceProvider = serviceProvider;
     _reportRegistry = reportRegistry;
-    _browserService = new BrowserService(options.Value.BrowserOptions);
+    _browserService = browserService;
   }
 
   /// <summary>
@@ -191,13 +190,5 @@ public sealed class ReportService : IReportService, IAsyncDisposable
     var reportNormalizedName = name.ToLowerInvariant().Trim();
     var foundReport = _reportRegistry.Reports.TryGetValue(reportNormalizedName, out var report);
     return foundReport ? report : null;
-  }
-
-  /// <summary>
-  /// Disposes the blazor report service
-  /// </summary>
-  public async ValueTask DisposeAsync()
-  {
-    await _browserService.DisposeAsync();
   }
 }

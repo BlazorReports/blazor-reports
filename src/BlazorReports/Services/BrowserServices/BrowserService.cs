@@ -2,16 +2,20 @@ using System.Collections.Concurrent;
 using System.IO.Pipelines;
 using BlazorReports.Models;
 using BlazorReports.Services.BrowserServices.Problems;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using OneOf;
 using OneOf.Types;
 
 namespace BlazorReports.Services.BrowserServices;
 
 /// <summary>
-/// Represents a connection to the browser
+/// Service for interacting with the browser
 /// </summary>
-internal sealed class BrowserService : IAsyncDisposable
+internal sealed class BrowserService : IAsyncDisposable, IBrowserService
 {
+  private readonly ILogger<BrowserService> _logger;
+  private readonly IBrowserFactory _browserFactory;
   private readonly BlazorReportsBrowserOptions _browserOptions;
   private readonly ConcurrentQueue<Browser> _browserQueue = new();
   private readonly SemaphoreSlim _semaphore;
@@ -21,11 +25,19 @@ internal sealed class BrowserService : IAsyncDisposable
   /// <summary>
   /// The connection to the browser
   /// </summary>
-  /// <param name="browserOptions"> The options for the browser </param>
-  public BrowserService(BlazorReportsBrowserOptions browserOptions)
+  /// <param name="logger"> The logger </param>
+  /// <param name="options"> The options for Blazor Reports</param>
+  /// <param name="browserFactory"> The factory for creating browser instances </param>
+  public BrowserService(
+    ILogger<BrowserService> logger,
+    IOptions<BlazorReportsOptions> options,
+    IBrowserFactory browserFactory
+  )
   {
-    _browserOptions = browserOptions;
-    _semaphore = new SemaphoreSlim(0, browserOptions.MaxBrowserPoolSize);
+    _logger = logger;
+    _browserFactory = browserFactory;
+    _browserOptions = options.Value.BrowserOptions;
+    _semaphore = new SemaphoreSlim(0, _browserOptions.MaxBrowserPoolSize);
   }
 
   /// <summary>
@@ -76,7 +88,7 @@ internal sealed class BrowserService : IAsyncDisposable
       {
         if (_currentBrowserPoolSize >= _browserOptions.MaxBrowserPoolSize)
           break;
-        var browser = await Browser.CreateBrowser(_browserOptions);
+        var browser = await _browserFactory.CreateBrowser(_browserOptions);
         _browserQueue.Enqueue(browser);
         _currentBrowserPoolSize++;
         _semaphore.Release();
@@ -102,6 +114,7 @@ internal sealed class BrowserService : IAsyncDisposable
           _browserQueue.Enqueue(browser);
           return browser;
         }
+
         retryCount++;
         await Task.Delay(TimeSpan.FromSeconds(5));
       }
@@ -119,6 +132,7 @@ internal sealed class BrowserService : IAsyncDisposable
   /// </summary>
   public async ValueTask DisposeAsync()
   {
+    _logger.LogDebug("Disposing of browser service");
     foreach (var browser in _browserQueue)
       await browser.DisposeAsync();
   }
