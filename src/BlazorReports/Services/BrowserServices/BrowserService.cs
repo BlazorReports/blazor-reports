@@ -64,7 +64,7 @@ internal sealed class BrowserService : IAsyncDisposable, IBrowserService
     );
     if (hasBrowserPoolLimitReachedProblem)
     {
-      _logger.LogWarning("Browser pool limit reached");
+      _logger.LogWarning("Browser pool limit reached, server cannot handle request");
       return new ServerBusyProblem();
     }
 
