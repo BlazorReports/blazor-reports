@@ -1,5 +1,6 @@
 using BlazorReports.Models;
 using BlazorReports.Services;
+using BlazorReports.Services.BrowserServices;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace BlazorReports.Extensions;
@@ -22,6 +23,8 @@ public static class ServiceCollectionExtensions
   {
     services.Configure(options ?? (_ => { }));
     services.AddSingleton<BlazorReportRegistry>();
+    services.AddSingleton<IBrowserFactory, BrowserFactory>();
+    services.AddSingleton<IBrowserService, BrowserService>();
     services.AddSingleton<IReportService, ReportService>();
 
     return services;
