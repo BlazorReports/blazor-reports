@@ -339,7 +339,7 @@ internal sealed class Connection : IAsyncDisposable
 
     _webSocket.Dispose();
     _sendSignal.Dispose();
-    _responseTasks.Clear();
     _connectionLock.Dispose();
+    _responseTasks.Clear();
   }
 }
