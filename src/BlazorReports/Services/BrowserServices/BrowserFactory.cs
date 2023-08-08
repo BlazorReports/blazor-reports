@@ -64,6 +64,8 @@ internal sealed class BrowserFactory(
       throw new Exception($"Could not read DevToolsActivePort file '{devToolsActivePortFile}'");
     }
 
+    browserFactoryLogger.LogDebug("Data directory used: {DataDirectory}", devToolsDirectory);
+
     var uri = new Uri($"ws://127.0.0.1:{lines[0]}{lines[1]}");
     var connection = new Connection(uri, browserOptions.ResponseTimeout);
     await connection.InitializeAsync();
@@ -114,10 +116,19 @@ internal sealed class BrowserFactory(
     if (browserOptions.NoSandbox)
       defaultChromiumArgument.Add("--no-sandbox");
 
+    if (browserOptions.DisableDevShmUsage)
+      defaultChromiumArgument.Add("--disable-dev-shm-usage");
+
+    var chromiumArguments = string.Join(" ", defaultChromiumArgument);
+    browserFactoryLogger.LogDebug(
+      "Starting Chromium process with arguments \'{ChromiumArguments}\'",
+      chromiumArguments
+    );
+
     var processStartInfo = new ProcessStartInfo
     {
       FileName = chromiumExeFileName,
-      Arguments = string.Join(" ", defaultChromiumArgument),
+      Arguments = chromiumArguments,
       CreateNoWindow = true
     };
 

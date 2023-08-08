@@ -16,7 +16,7 @@ namespace BlazorReports.Services.BrowserServices;
 /// </summary>
 internal sealed class Browser(
   Process chromiumProcess,
-  DirectoryInfo devToolsActivePortDirectory,
+  DirectoryInfo dataDirectory,
   Connection connection,
   BlazorReportsBrowserOptions browserOptions,
   ILogger logger
@@ -91,9 +91,14 @@ internal sealed class Browser(
       }
       catch (Exception e)
       {
+        logger.LogError(
+          e,
+          "Failed to generate report for browser with process id {BrowserProcessId} and data directory {DevToolsActivePortDirectory}",
+          chromiumProcess.Id,
+          dataDirectory
+        );
         await DisposeBrowserPage(browserPage);
         browserPagedDisposed = true;
-        logger.LogError(e, "Failed to generate report");
         return new BrowserProblem();
       }
     }
@@ -222,7 +227,7 @@ internal sealed class Browser(
     chromiumProcess.Kill();
     chromiumProcess.Dispose();
     await connection.DisposeAsync();
-    if (devToolsActivePortDirectory.Exists)
-      Directory.Delete(devToolsActivePortDirectory.FullName, true);
+    if (dataDirectory.Exists)
+      Directory.Delete(dataDirectory.FullName, true);
   }
 }

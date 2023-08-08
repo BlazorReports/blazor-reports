@@ -23,6 +23,12 @@ public class BlazorReportsBrowserOptions
   public bool NoSandbox { get; set; }
 
   /// <summary>
+  /// Configures the browser to use tmp dir instead of /dev/shm for shared memory files.
+  /// Useful for container scenarios which generally have /dev/shm size constrained.
+  /// </summary>
+  public bool DisableDevShmUsage { get; set; }
+
+  /// <summary>
   /// Sets the maximum pool size for the browser. Defaults to 4
   /// </summary>
   public int MaxBrowserPoolSize { get; set; } = 4;
