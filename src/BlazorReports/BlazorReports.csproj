@@ -11,15 +11,15 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <FrameworkReference Include="Microsoft.AspNetCore.App"/>
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\BlazorReports.Components\BlazorReports.Components.csproj" />
+    <ProjectReference Include="..\BlazorReports.Components\BlazorReports.Components.csproj"/>
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="OneOf" Version="3.0.255" />
+    <PackageReference Include="OneOf" Version="3.0.255"/>
   </ItemGroup>
 
 </Project>
