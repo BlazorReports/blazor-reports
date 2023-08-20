@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO.Pipelines;
 using BlazorReports.Models;
+using BlazorReports.Services.BrowserServices.Logs;
 using BlazorReports.Services.BrowserServices.Problems;
 using BlazorReports.Services.BrowserServices.Requests;
 using BlazorReports.Services.BrowserServices.Responses;
@@ -91,11 +92,11 @@ internal sealed class Browser(
       }
       catch (Exception e)
       {
-        logger.LogError(
+        LogMessages.BrowserGenerateReportFailed(
+          logger,
           e,
-          "Failed to generate report for browser with process id {BrowserProcessId} and data directory {DevToolsActivePortDirectory}",
           chromiumProcess.Id,
-          dataDirectory
+          dataDirectory.FullName
         );
         await DisposeBrowserPage(browserPage);
         browserPagedDisposed = true;
@@ -140,7 +141,7 @@ internal sealed class Browser(
       }
       catch (Exception e)
       {
-        logger.LogError(e, "Failed to create browser page");
+        LogMessages.BrowserCreatePageFailed(logger, e, chromiumProcess.Id, dataDirectory.FullName);
         return new BrowserProblem();
       }
     }
@@ -217,10 +218,7 @@ internal sealed class Browser(
   /// </summary>
   public async ValueTask DisposeAsync()
   {
-    logger.LogDebug(
-      "Disposing of browser with process id: {ChromiumProcessId}",
-      chromiumProcess.Id
-    );
+    LogMessages.BrowserDispose(logger, chromiumProcess.Id);
     _poolLock.Dispose();
     foreach (var browserPage in _browserPagePool)
       await browserPage.DisposeAsync();

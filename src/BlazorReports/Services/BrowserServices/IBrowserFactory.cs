@@ -1,4 +1,6 @@
 using BlazorReports.Models;
+using BlazorReports.Services.BrowserServices.Problems;
+using OneOf;
 
 namespace BlazorReports.Services.BrowserServices;
 
@@ -12,5 +14,7 @@ internal interface IBrowserFactory
   /// </summary>
   /// <param name="browserOptions"></param>
   /// <returns> The browser instance </returns>
-  ValueTask<Browser> CreateBrowser(BlazorReportsBrowserOptions browserOptions);
+  ValueTask<OneOf<Browser, BrowserProblem>> CreateBrowser(
+    BlazorReportsBrowserOptions browserOptions
+  );
 }

@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.IO.Pipelines;
 using BlazorReports.Models;
+using BlazorReports.Services.BrowserServices.Logs;
 using BlazorReports.Services.BrowserServices.Problems;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -64,9 +65,7 @@ internal sealed class BrowserService : IAsyncDisposable, IBrowserService
     );
     if (hasBrowserPoolLimitReachedProblem)
     {
-      _logger.LogWarning(
-        "Browser pool limit reached and retry time expired, server could not handle request"
-      );
+      LogMessages.BrowserPoolLimitReachedAndRetryTimeExpired(_logger);
       return new ServerBusyProblem();
     }
 
@@ -76,7 +75,7 @@ internal sealed class BrowserService : IAsyncDisposable, IBrowserService
     );
     if (hasBrowserStartProblem)
     {
-      _logger.LogError("Failed to start browser");
+      LogMessages.FailedToStartBrowser(_logger);
       return browserStartProblem;
     }
 
@@ -97,8 +96,17 @@ internal sealed class BrowserService : IAsyncDisposable, IBrowserService
         // Check again in case another thread has already created a browser
         if (_currentBrowserPoolSize < _browserOptions.MaxBrowserPoolSize)
         {
-          _logger.LogDebug("Creating new browser instance");
-          var browser = await _browserFactory.CreateBrowser(_browserOptions);
+          LogMessages.CreatingNewBrowserInstance(_logger);
+          var createBrowserResult = await _browserFactory.CreateBrowser(_browserOptions);
+          var hasBrowserProblem = createBrowserResult.TryPickT1(
+            out var browserProblem,
+            out var browser
+          );
+          if (hasBrowserProblem)
+          {
+            LogMessages.FailedToCreateBrowser(_logger);
+            return browserProblem;
+          }
           _browserQueue.Enqueue(browser);
           _currentBrowserPoolSize++;
           _browserPoolLock.Release();
@@ -107,7 +115,7 @@ internal sealed class BrowserService : IAsyncDisposable, IBrowserService
       }
       catch (Exception ex)
       {
-        _logger.LogError(ex, "Failed to create browser");
+        LogMessages.FailedToCreateBrowser(_logger, ex);
         return new BrowserProblem();
       }
       finally
@@ -146,7 +154,7 @@ internal sealed class BrowserService : IAsyncDisposable, IBrowserService
   /// </summary>
   public async ValueTask DisposeAsync()
   {
-    _logger.LogDebug("Disposing of browser service");
+    LogMessages.DisposingOfBrowserService(_logger);
     _browserPoolLock.Dispose();
     _browserStartLock.Dispose();
     while (_browserQueue.TryDequeue(out var browser))
