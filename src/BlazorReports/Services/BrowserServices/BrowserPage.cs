@@ -17,7 +17,7 @@ public sealed class BrowserPage : IAsyncDisposable
   /// <summary>
   /// The id of the page in the browser
   /// </summary>
-  public readonly string TargetId;
+  internal readonly string TargetId;
   private readonly Connection _connection;
   private readonly CustomFromBase64Transform _transform;
 

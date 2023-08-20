@@ -6,7 +6,7 @@ namespace BlazorReports.Services.BrowserServices.Requests;
 /// Message sent to the browser
 /// </summary>
 /// <param name="method"> The method executed by the browser</param>
-internal class BrowserMessage(string method)
+internal sealed class BrowserMessage(string method)
 {
   /// <summary>
   /// The id of the message
@@ -33,4 +33,4 @@ internal class BrowserMessage(string method)
 [JsonSerializable(typeof(string))]
 [JsonSerializable(typeof(bool))]
 [JsonSerializable(typeof(double))]
-internal partial class BrowserMessageSerializationContext : JsonSerializerContext { }
+internal sealed partial class BrowserMessageSerializationContext : JsonSerializerContext { }

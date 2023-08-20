@@ -2,7 +2,10 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using BlazorReports.Models;
 using BlazorReports.Services.BrowserServices.Helpers;
+using BlazorReports.Services.BrowserServices.Logs;
+using BlazorReports.Services.BrowserServices.Problems;
 using Microsoft.Extensions.Logging;
+using OneOf;
 
 namespace BlazorReports.Services.BrowserServices;
 
@@ -21,7 +24,9 @@ internal sealed class BrowserFactory(
   /// <returns> The browser instance </returns>
   /// <exception cref="FileNotFoundException"> Thrown when the browser executable is not found </exception>
   /// <exception cref="Exception"> Thrown when the browser process could not be started </exception>
-  public async ValueTask<Browser> CreateBrowser(BlazorReportsBrowserOptions browserOptions)
+  public async ValueTask<OneOf<Browser, BrowserProblem>> CreateBrowser(
+    BlazorReportsBrowserOptions browserOptions
+  )
   {
     var browserExecutableLocation = browserOptions.BrowserExecutableLocation is not null
       ? browserOptions.BrowserExecutableLocation.FullName
@@ -50,18 +55,25 @@ internal sealed class BrowserFactory(
     {
       var started = chromiumProcess.Start();
       if (!started)
-        throw new Exception("Could not start browser process");
+      {
+        LogMessages.FailedToStartBrowser(browserFactoryLogger);
+        return new BrowserProblem();
+      }
     }
     catch (Exception exception)
     {
-      browserFactoryLogger.LogError(exception, "Could not start browser process");
-      throw;
+      LogMessages.FailedToStartBrowser(browserFactoryLogger, exception);
+      return new BrowserProblem();
     }
 
     var lines = await ReadDevToolsActiveFile(devToolsActivePortFile, devToolsActivePortDirectory);
     if (lines.Length != 2)
     {
-      throw new Exception($"Could not read DevToolsActivePort file '{devToolsActivePortFile}'");
+      browserFactoryLogger.LogError(
+        "Could not read DevToolsActivePort file '{DevToolsActivePortFile}'",
+        devToolsActivePortFile
+      );
+      return new BrowserProblem();
     }
 
     browserFactoryLogger.LogDebug("Data directory used: {DataDirectory}", devToolsDirectory);
@@ -150,10 +162,6 @@ internal sealed class BrowserFactory(
     if (process.ExitCode == 0)
       return;
 
-    browserFactoryLogger.LogError(
-      "Chromium process exited with code \'{ProcessExitCode}\'",
-      process.ExitCode
-    );
     var exception = Marshal.GetExceptionForHR(process.ExitCode);
     browserFactoryLogger.LogError(
       exception,

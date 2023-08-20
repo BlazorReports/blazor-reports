@@ -19,6 +19,16 @@ internal static class ChromeFinder
   private const string ChromeExecutableNameLinux4 = "chromium-browser";
   private const string ChromeExecutableNameMac1 = "Google Chrome.app/Contents/MacOS/Google Chrome";
   private const string ChromeExecutableNameMac2 = "Chromium.app/Contents/MacOS/Chromium";
+  private static readonly string[] LinuxDirectoryLocations =
+  {
+    "/usr/local/sbin",
+    "/usr/local/bin",
+    "/usr/sbin",
+    "/usr/bin",
+    "/sbin",
+    "/bin",
+    "/opt/microsoft/edge"
+  };
 
   /// <summary>
   /// Tries to find Chrome
@@ -79,18 +89,7 @@ internal static class ChromeFinder
     }
     else if (IsLinux)
     {
-      directories.AddRange(
-        new[]
-        {
-          "/usr/local/sbin",
-          "/usr/local/bin",
-          "/usr/sbin",
-          "/usr/bin",
-          "/sbin",
-          "/bin",
-          "/opt/google/chrome"
-        }
-      );
+      directories.AddRange(LinuxDirectoryLocations);
     }
     else if (IsMacOs)
     {

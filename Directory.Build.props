@@ -4,6 +4,9 @@
     <ArtifactsPath>$(MSBuildThisFileDirectory)artifacts</ArtifactsPath>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <NuGetAudit>true</NuGetAudit>
+    <AnalysisMode>Recommended</AnalysisMode>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <NoWarn>$(NoWarn);CA2201;CA1848</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup>

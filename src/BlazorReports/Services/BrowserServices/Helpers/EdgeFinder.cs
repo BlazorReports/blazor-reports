@@ -18,6 +18,17 @@ internal static class EdgeFinder
   private const string ChromeExecutableNameLinux3 = "microsoft-edge-dev";
   private const string ChromeExecutableNameMac = "Microsoft Edge.app/Contents/MacOS/Microsoft Edge";
 
+  private static readonly string[] LinuxDirectoryLocations =
+  {
+    "/usr/local/sbin",
+    "/usr/local/bin",
+    "/usr/sbin",
+    "/usr/bin",
+    "/sbin",
+    "/bin",
+    "/opt/microsoft/edge"
+  };
+
   /// <summary>
   /// Tries to find Chrome
   /// </summary>
@@ -77,18 +88,7 @@ internal static class EdgeFinder
     }
     else if (IsLinux)
     {
-      directories.AddRange(
-        new[]
-        {
-          "/usr/local/sbin",
-          "/usr/local/bin",
-          "/usr/sbin",
-          "/usr/bin",
-          "/sbin",
-          "/bin",
-          "/opt/microsoft/edge"
-        }
-      );
+      directories.AddRange(LinuxDirectoryLocations);
     }
     else if (IsMacOs)
     {
