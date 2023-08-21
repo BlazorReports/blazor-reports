@@ -69,14 +69,15 @@ internal sealed class BrowserFactory(
     var lines = await ReadDevToolsActiveFile(devToolsActivePortFile, devToolsActivePortDirectory);
     if (lines.Length != 2)
     {
-      browserFactoryLogger.LogError(
-        "Could not read DevToolsActivePort file '{DevToolsActivePortFile}'",
+      LogMessages.CouldNotReadDevToolsActivePort(
+        browserFactoryLogger,
+        new IOException($"The file '{devToolsActivePortFile}' did not contain 2 lines"),
         devToolsActivePortFile
       );
       return new BrowserProblem();
     }
 
-    browserFactoryLogger.LogDebug("Data directory used: {DataDirectory}", devToolsDirectory);
+    LogMessages.BrowserDataDirectoryUsed(browserFactoryLogger, devToolsDirectory);
 
     var uri = new Uri($"ws://127.0.0.1:{lines[0]}{lines[1]}");
     var connection = new Connection(uri, browserOptions.ResponseTimeout);
@@ -132,8 +133,8 @@ internal sealed class BrowserFactory(
       defaultChromiumArgument.Add("--disable-dev-shm-usage");
 
     var chromiumArguments = string.Join(" ", defaultChromiumArgument);
-    browserFactoryLogger.LogDebug(
-      "Starting Chromium process with arguments \'{ChromiumArguments}\'",
+    LogMessages.StartingChromiumProcess(
+      browserFactoryLogger,
       chromiumArguments
     );
 
@@ -163,11 +164,7 @@ internal sealed class BrowserFactory(
       return;
 
     var exception = Marshal.GetExceptionForHR(process.ExitCode);
-    browserFactoryLogger.LogError(
-      exception,
-      "Chromium process exited with code \'{ProcessExitCode}\'",
-      process.ExitCode
-    );
+    LogMessages.ChromiumProcessCrashed(browserFactoryLogger, exception, process.ExitCode);
   }
 
   private static async ValueTask<string[]> ReadDevToolsActiveFile(

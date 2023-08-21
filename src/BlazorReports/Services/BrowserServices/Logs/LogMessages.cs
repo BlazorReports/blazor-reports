@@ -115,4 +115,38 @@ public static partial class LogMessages
   public static partial void DisposingOfBrowserService(ILogger logger);
 
   // Browser Factory Messages
+
+  /// <summary>
+  /// Log message for when the DevToolsActivePort file could not be read
+  /// </summary>
+  /// <param name="logger"> The logger </param>
+  /// <param name="error"> The error that occurred </param>
+  /// <param name="devToolsActivePortFile"> The dev tools active port file </param>
+  [LoggerMessage(EventId = 10, Level = LogLevel.Error, Message = "Could not read DevToolsActivePort file '{DevToolsActivePortFile}'")]
+  public static partial void CouldNotReadDevToolsActivePort(ILogger logger, Exception error, string devToolsActivePortFile);
+
+  /// <summary>
+  /// Log message for the browser data directory being used
+  /// </summary>
+  /// <param name="logger"> The logger </param>
+  /// <param name="browserDataDirectory"> The browser data directory </param>
+  [LoggerMessage(EventId = 11, Level = LogLevel.Debug, Message = "Data directory used: {BrowserDataDirectory}")]
+  public static partial void BrowserDataDirectoryUsed(ILogger logger, string browserDataDirectory);
+
+  /// <summary>
+  /// Log message for when the chromium process is being started
+  /// </summary>
+  /// <param name="logger"> The logger </param>
+  /// <param name="chromiumArguments"> The chromium arguments </param>
+  [LoggerMessage(EventId = 12, Level = LogLevel.Debug, Message = "Starting Chromium process with arguments \'{ChromiumArguments}\'")]
+  public static partial void StartingChromiumProcess(ILogger logger, string chromiumArguments);
+
+  /// <summary>
+  /// Log message for when the chromium process exited
+  /// </summary>
+  /// <param name="logger"> The logger </param>
+  /// <param name="error"> The error that occurred </param>
+  /// <param name="processExitCode"> The process exit code </param>
+  [LoggerMessage(EventId = 13, Level = LogLevel.Error, Message = "Chromium process exited with code \'{ProcessExitCode}\'")]
+  public static partial void ChromiumProcessCrashed(ILogger logger, Exception? error, int processExitCode);
 }
