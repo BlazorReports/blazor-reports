@@ -8,8 +8,5 @@ internal interface IBrowserPageFactory
   /// <param name="targetId"> The target id </param>
   /// <param name="pageUri"> The page uri </param>
   /// <returns> The browser page </returns>
-  ValueTask<BrowserPage> CreateBrowserPage(
-    string targetId,
-    Uri pageUri
-  );
+  ValueTask<BrowserPage> CreateBrowserPage(string targetId, Uri pageUri);
 }

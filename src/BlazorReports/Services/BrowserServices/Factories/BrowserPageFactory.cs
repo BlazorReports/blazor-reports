@@ -14,10 +14,7 @@ internal sealed class BrowserPageFactory(
   /// <param name="targetId"> The target id </param>
   /// <param name="pageUri"> The page uri </param>
   /// <returns> The browser page </returns>
-  public async ValueTask<BrowserPage> CreateBrowserPage(
-    string targetId,
-    Uri pageUri
-  )
+  public async ValueTask<BrowserPage> CreateBrowserPage(string targetId, Uri pageUri)
   {
     var pageConnection = await connectionFactory.CreateConnection(
       pageUri,
