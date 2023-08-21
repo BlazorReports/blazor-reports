@@ -133,10 +133,7 @@ internal sealed class BrowserFactory(
       defaultChromiumArgument.Add("--disable-dev-shm-usage");
 
     var chromiumArguments = string.Join(" ", defaultChromiumArgument);
-    LogMessages.StartingChromiumProcess(
-      browserFactoryLogger,
-      chromiumArguments
-    );
+    LogMessages.StartingChromiumProcess(browserFactoryLogger, chromiumArguments);
 
     var processStartInfo = new ProcessStartInfo
     {

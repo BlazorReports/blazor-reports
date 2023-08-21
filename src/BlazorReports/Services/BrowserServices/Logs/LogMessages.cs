@@ -122,15 +122,27 @@ public static partial class LogMessages
   /// <param name="logger"> The logger </param>
   /// <param name="error"> The error that occurred </param>
   /// <param name="devToolsActivePortFile"> The dev tools active port file </param>
-  [LoggerMessage(EventId = 10, Level = LogLevel.Error, Message = "Could not read DevToolsActivePort file '{DevToolsActivePortFile}'")]
-  public static partial void CouldNotReadDevToolsActivePort(ILogger logger, Exception error, string devToolsActivePortFile);
+  [LoggerMessage(
+    EventId = 10,
+    Level = LogLevel.Error,
+    Message = "Could not read DevToolsActivePort file '{DevToolsActivePortFile}'"
+  )]
+  public static partial void CouldNotReadDevToolsActivePort(
+    ILogger logger,
+    Exception error,
+    string devToolsActivePortFile
+  );
 
   /// <summary>
   /// Log message for the browser data directory being used
   /// </summary>
   /// <param name="logger"> The logger </param>
   /// <param name="browserDataDirectory"> The browser data directory </param>
-  [LoggerMessage(EventId = 11, Level = LogLevel.Debug, Message = "Data directory used: {BrowserDataDirectory}")]
+  [LoggerMessage(
+    EventId = 11,
+    Level = LogLevel.Debug,
+    Message = "Data directory used: {BrowserDataDirectory}"
+  )]
   public static partial void BrowserDataDirectoryUsed(ILogger logger, string browserDataDirectory);
 
   /// <summary>
@@ -138,7 +150,11 @@ public static partial class LogMessages
   /// </summary>
   /// <param name="logger"> The logger </param>
   /// <param name="chromiumArguments"> The chromium arguments </param>
-  [LoggerMessage(EventId = 12, Level = LogLevel.Debug, Message = "Starting Chromium process with arguments \'{ChromiumArguments}\'")]
+  [LoggerMessage(
+    EventId = 12,
+    Level = LogLevel.Debug,
+    Message = "Starting Chromium process with arguments \'{ChromiumArguments}\'"
+  )]
   public static partial void StartingChromiumProcess(ILogger logger, string chromiumArguments);
 
   /// <summary>
@@ -147,6 +163,14 @@ public static partial class LogMessages
   /// <param name="logger"> The logger </param>
   /// <param name="error"> The error that occurred </param>
   /// <param name="processExitCode"> The process exit code </param>
-  [LoggerMessage(EventId = 13, Level = LogLevel.Error, Message = "Chromium process exited with code \'{ProcessExitCode}\'")]
-  public static partial void ChromiumProcessCrashed(ILogger logger, Exception? error, int processExitCode);
+  [LoggerMessage(
+    EventId = 13,
+    Level = LogLevel.Error,
+    Message = "Chromium process exited with code \'{ProcessExitCode}\'"
+  )]
+  public static partial void ChromiumProcessCrashed(
+    ILogger logger,
+    Exception? error,
+    int processExitCode
+  );
 }
