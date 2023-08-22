@@ -6,7 +6,6 @@
     <NuGetAudit>true</NuGetAudit>
     <AnalysisMode>Recommended</AnalysisMode>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
-    <NoWarn>$(NoWarn);CA2201</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup>

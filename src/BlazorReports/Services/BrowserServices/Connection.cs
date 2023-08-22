@@ -1,6 +1,5 @@
 using System.Buffers;
 using System.Collections.Concurrent;
-using System.Diagnostics;
 using System.Net.WebSockets;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
@@ -232,7 +231,7 @@ internal sealed class Connection : IAsyncDisposable
     var parsedMessage = response.RootElement.Deserialize(returnDataJsonTypeInfo);
 
     if (parsedMessage is null)
-      throw new Exception("Could not deserialize response");
+      throw new JsonException("Could not deserialize response");
 
     return parsedMessage;
   }
@@ -255,7 +254,7 @@ internal sealed class Connection : IAsyncDisposable
     var parsedMessage = response.RootElement.Deserialize(returnDataJsonTypeInfo);
 
     if (parsedMessage is null)
-      throw new Exception("Could not deserialize response");
+      throw new JsonException("Could not deserialize response");
 
     return await responseHandler(parsedMessage);
   }
@@ -278,7 +277,7 @@ internal sealed class Connection : IAsyncDisposable
     var parsedMessage = response.RootElement.Deserialize(returnDataJsonTypeInfo);
 
     if (parsedMessage is null)
-      throw new Exception("Could not deserialize response");
+      throw new JsonException("Could not deserialize response");
 
     responseAction(parsedMessage);
   }
@@ -310,7 +309,7 @@ internal sealed class Connection : IAsyncDisposable
       var parsedMessage = response.RootElement.Deserialize(returnDataJsonTypeInfo);
 
       if (parsedMessage is null)
-        throw new Exception("Could not deserialize response");
+        throw new JsonException("Could not deserialize response");
 
       await responseAction(parsedMessage);
     }
