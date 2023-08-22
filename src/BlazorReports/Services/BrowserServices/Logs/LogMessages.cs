@@ -173,4 +173,18 @@ public static partial class LogMessages
     Exception? error,
     int processExitCode
   );
+
+  // Connection Messages
+
+  /// <summary>
+  /// Log message for when the connection to the browser cannot be established
+  /// </summary>
+  /// <param name="logger"> The logger </param>
+  /// <param name="uri"> The uri </param>
+  [LoggerMessage(
+    EventId = 14,
+    Level = LogLevel.Error,
+    Message = "Unable to establish the WebSocket connection after multiple attempts for URI: {Uri}"
+  )]
+  public static partial void UnableToEstablishWebSocketConnection(ILogger logger, Uri uri);
 }

@@ -4,7 +4,12 @@ using System.Diagnostics;
 using System.Net.WebSockets;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
+using BlazorReports.Services.BrowserServices.Logs;
+using BlazorReports.Services.BrowserServices.Problems;
 using BlazorReports.Services.BrowserServices.Requests;
+using Microsoft.Extensions.Logging;
+using OneOf;
+using OneOf.Types;
 
 namespace BlazorReports.Services.BrowserServices;
 
@@ -26,6 +31,7 @@ internal sealed class Connection : IAsyncDisposable
   private readonly SemaphoreSlim _connectionLock = new(1, 1);
   private readonly CancellationTokenSource _cts = new();
   private readonly TimeSpan _responseTimeout;
+  private readonly ILogger<Connection> _logger;
 
   /// <summary>
   /// The uri of the connection
@@ -37,10 +43,12 @@ internal sealed class Connection : IAsyncDisposable
   /// </summary>
   /// <param name="uri"> The uri of the connection</param>
   /// <param name="responseTimeout"> The response timeout</param>
-  public Connection(Uri uri, TimeSpan responseTimeout)
+  /// <param name="logger"> The logger</param>
+  public Connection(Uri uri, TimeSpan responseTimeout, ILogger<Connection> logger)
   {
     Uri = uri;
     _responseTimeout = responseTimeout;
+    _logger = logger;
   }
 
   public async Task InitializeAsync(CancellationToken stoppingToken = default)
@@ -68,10 +76,12 @@ internal sealed class Connection : IAsyncDisposable
   /// <param name="stoppingToken"> Token to stop the task</param>
   /// <returns> A task that represents the asynchronous operation</returns>
   /// <exception cref="Exception"> Thrown when the connection could not be established</exception>
-  public async ValueTask ConnectAsync(CancellationToken stoppingToken = default)
+  public async ValueTask<OneOf<Success, ConnectionProblem>> ConnectAsync(
+    CancellationToken stoppingToken = default
+  )
   {
     if (_webSocket.State is WebSocketState.Open)
-      return;
+      return new Success();
 
     await _connectionLock.WaitAsync(stoppingToken);
 
@@ -98,9 +108,11 @@ internal sealed class Connection : IAsyncDisposable
       }
 
       if (_webSocket.State is not WebSocketState.Open)
-        throw new Exception(
-          "Unable to establish the WebSocket connection after multiple attempts."
-        );
+      {
+        LogMessages.UnableToEstablishWebSocketConnection(_logger, Uri);
+        return new ConnectionProblem();
+      }
+      return new Success();
     }
     finally
     {

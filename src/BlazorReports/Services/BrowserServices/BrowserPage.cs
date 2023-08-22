@@ -12,7 +12,7 @@ namespace BlazorReports.Services.BrowserServices;
 /// <summary>
 /// Represents a page in the browser
 /// </summary>
-public sealed class BrowserPage : IAsyncDisposable
+internal sealed class BrowserPage : IAsyncDisposable
 {
   /// <summary>
   /// The id of the page in the browser
@@ -25,23 +25,12 @@ public sealed class BrowserPage : IAsyncDisposable
   /// Creates a new instance of the BrowserPage
   /// </summary>
   /// <param name="targetId"> The id of the page in the browser</param>
-  /// <param name="uri"> The uri of the page</param>
-  /// <param name="browserOptions"> The browser options</param>
-  public BrowserPage(string targetId, Uri uri, BlazorReportsBrowserOptions browserOptions)
+  /// <param name="connection"> The connection to the browser</param>
+  public BrowserPage(string targetId, Connection connection)
   {
     TargetId = targetId;
-    _connection = new Connection(uri, browserOptions.ResponseTimeout);
+    _connection = connection;
     _transform = new CustomFromBase64Transform(FromBase64TransformMode.IgnoreWhiteSpaces);
-  }
-
-  /// <summary>
-  /// Initializes the connection to the browser
-  /// </summary>
-  /// <param name="stoppingToken"></param>
-  /// <returns></returns>
-  public async Task InitializeAsync(CancellationToken stoppingToken = default)
-  {
-    await _connection.InitializeAsync(stoppingToken);
   }
 
   /// <summary>

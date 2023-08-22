@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO.Pipelines;
 using BlazorReports.Models;
+using BlazorReports.Services.BrowserServices.Factories;
 using BlazorReports.Services.BrowserServices.Logs;
 using BlazorReports.Services.BrowserServices.Problems;
 using BlazorReports.Services.BrowserServices.Requests;
@@ -20,7 +21,8 @@ internal sealed class Browser(
   DirectoryInfo dataDirectory,
   Connection connection,
   BlazorReportsBrowserOptions browserOptions,
-  ILogger logger
+  ILogger logger,
+  IBrowserPageFactory browserPageFactory
 ) : IAsyncDisposable
 {
   private readonly ConcurrentStack<BrowserPage> _browserPagePool = new();
@@ -191,7 +193,6 @@ internal sealed class Browser(
   {
     var createTargetMessage = new BrowserMessage("Target.createTarget");
     createTargetMessage.Parameters.Add("url", "about:blank");
-    // createTargetMessage.Parameters.Add("enableBeginFrameControl", true);
     await connection.ConnectAsync(stoppingToken);
     return await connection.SendAsync(
       createTargetMessage,
@@ -200,12 +201,10 @@ internal sealed class Browser(
       {
         var pageUrl =
           $"{connection.Uri.Scheme}://{connection.Uri.Host}:{connection.Uri.Port}/devtools/page/{targetResponse.Result.TargetId}";
-        var browserPage = new BrowserPage(
+        var browserPage = await browserPageFactory.CreateBrowserPage(
           targetResponse.Result.TargetId,
-          new Uri(pageUrl),
-          browserOptions
+          new Uri(pageUrl)
         );
-        await browserPage.InitializeAsync(stoppingToken);
         _currentBrowserPagePoolSize++;
         return browserPage;
       },

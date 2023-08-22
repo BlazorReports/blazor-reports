@@ -5,29 +5,32 @@ using BlazorReports.Services.BrowserServices.Helpers;
 using BlazorReports.Services.BrowserServices.Logs;
 using BlazorReports.Services.BrowserServices.Problems;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using OneOf;
 
-namespace BlazorReports.Services.BrowserServices;
+namespace BlazorReports.Services.BrowserServices.Factories;
 
 /// <summary>
 /// Factory for creating browser instances
 /// </summary>
 internal sealed class BrowserFactory(
+  IOptions<BlazorReportsOptions> options,
   ILogger<BrowserFactory> browserFactoryLogger,
-  ILogger<Browser> browserLogger
+  ILogger<Browser> browserLogger,
+  IConnectionFactory connectionFactory,
+  IBrowserPageFactory browserPageFactory
 ) : IBrowserFactory
 {
   /// <summary>
   /// Creates a new browser instance
   /// </summary>
-  /// <param name="browserOptions"> The browser options </param>
   /// <returns> The browser instance </returns>
   /// <exception cref="FileNotFoundException"> Thrown when the browser executable is not found </exception>
   /// <exception cref="Exception"> Thrown when the browser process could not be started </exception>
-  public async ValueTask<OneOf<Browser, BrowserProblem>> CreateBrowser(
-    BlazorReportsBrowserOptions browserOptions
-  )
+  public async ValueTask<OneOf<Browser, BrowserProblem>> CreateBrowser()
   {
+    var browserOptions = options.Value.BrowserOptions;
+
     var browserExecutableLocation = browserOptions.BrowserExecutableLocation is not null
       ? browserOptions.BrowserExecutableLocation.FullName
       : BrowserFinder.Find(browserOptions.Browser);
@@ -80,14 +83,14 @@ internal sealed class BrowserFactory(
     LogMessages.BrowserDataDirectoryUsed(browserFactoryLogger, devToolsDirectory);
 
     var uri = new Uri($"ws://127.0.0.1:{lines[0]}{lines[1]}");
-    var connection = new Connection(uri, browserOptions.ResponseTimeout);
-    await connection.InitializeAsync();
+    var connection = await connectionFactory.CreateConnection(uri, browserOptions.ResponseTimeout);
     return new Browser(
       chromiumProcess,
       devToolsActivePortDirectory,
       connection,
       browserOptions,
-      browserLogger
+      browserLogger,
+      browserPageFactory
     );
   }
 

@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.IO.Pipelines;
 using BlazorReports.Models;
+using BlazorReports.Services.BrowserServices.Factories;
 using BlazorReports.Services.BrowserServices.Logs;
 using BlazorReports.Services.BrowserServices.Problems;
 using Microsoft.Extensions.Logging;
@@ -97,7 +98,7 @@ internal sealed class BrowserService : IAsyncDisposable, IBrowserService
         if (_currentBrowserPoolSize < _browserOptions.MaxBrowserPoolSize)
         {
           LogMessages.CreatingNewBrowserInstance(_logger);
-          var createBrowserResult = await _browserFactory.CreateBrowser(_browserOptions);
+          var createBrowserResult = await _browserFactory.CreateBrowser();
           var hasBrowserProblem = createBrowserResult.TryPickT1(
             out var browserProblem,
             out var browser
