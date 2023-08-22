@@ -149,8 +149,7 @@ internal sealed class Connection : IAsyncDisposable
     }
     catch (OperationCanceledException)
     {
-      // Log or handle the fact that the operation was cancelled
-      Debug.WriteLine("Operation was cancelled.");
+      LogMessages.SendQueueProcessingCancelled(_logger, Uri);
     }
     finally
     {
@@ -185,20 +184,11 @@ internal sealed class Connection : IAsyncDisposable
     }
     catch (OperationCanceledException)
     {
-      // Log or handle the fact that the operation was cancelled
-      Debug.WriteLine("Operation was cancelled.");
-    }
-    catch (WebSocketException ex)
-    {
-      Debug.WriteLine(ex.Message);
-    }
-    catch (JsonException ex)
-    {
-      Debug.WriteLine(ex.Message);
+      LogMessages.ReceiveQueueProcessingCancelled(_logger, Uri);
     }
     catch (Exception ex)
     {
-      Debug.WriteLine(ex.Message);
+      LogMessages.ReceiveQueueProcessingError(_logger, ex, Uri);
     }
     finally
     {
