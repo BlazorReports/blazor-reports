@@ -17,8 +17,7 @@ public static partial class LogMessages
   [LoggerMessage(
     EventId = 0,
     Level = LogLevel.Error,
-    Message =
-      "Failed to generate report for browser with process id {BrowserProcessId} and data directory {BrowserDataDirectory}"
+    Message = "Failed to generate report for browser with process id {BrowserProcessId} and data directory {BrowserDataDirectory}"
   )]
   public static partial void BrowserGenerateReportFailed(
     ILogger logger,
@@ -37,8 +36,7 @@ public static partial class LogMessages
   [LoggerMessage(
     EventId = 1,
     Level = LogLevel.Error,
-    Message =
-      "Failed to create browser page for browser with process id {BrowserProcessId} and data directory {BrowserDataDirectory}"
+    Message = "Failed to create browser page for browser with process id {BrowserProcessId} and data directory {BrowserDataDirectory}"
   )]
   public static partial void BrowserCreatePageFailed(
     ILogger logger,
