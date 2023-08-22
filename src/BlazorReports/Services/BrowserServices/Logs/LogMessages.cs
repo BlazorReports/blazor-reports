@@ -17,7 +17,8 @@ public static partial class LogMessages
   [LoggerMessage(
     EventId = 0,
     Level = LogLevel.Error,
-    Message = "Failed to generate report for browser with process id {BrowserProcessId} and data directory {BrowserDataDirectory}"
+    Message =
+      "Failed to generate report for browser with process id {BrowserProcessId} and data directory {BrowserDataDirectory}"
   )]
   public static partial void BrowserGenerateReportFailed(
     ILogger logger,
@@ -36,7 +37,8 @@ public static partial class LogMessages
   [LoggerMessage(
     EventId = 1,
     Level = LogLevel.Error,
-    Message = "Failed to create browser page for browser with process id {BrowserProcessId} and data directory {BrowserDataDirectory}"
+    Message =
+      "Failed to create browser page for browser with process id {BrowserProcessId} and data directory {BrowserDataDirectory}"
   )]
   public static partial void BrowserCreatePageFailed(
     ILogger logger,
@@ -187,4 +189,41 @@ public static partial class LogMessages
     Message = "Unable to establish the WebSocket connection after multiple attempts for URI: {Uri}"
   )]
   public static partial void UnableToEstablishWebSocketConnection(ILogger logger, Uri uri);
+
+  /// <summary>
+  /// Log message for when the sending queue processing is cancelled
+  /// </summary>
+  /// <param name="logger"> The logger </param>
+  /// <param name="uri"> The uri </param>
+  [LoggerMessage(
+    EventId = 15,
+    Level = LogLevel.Debug,
+    Message = "Sending queue processing cancelled for URI: {Uri}"
+  )]
+  public static partial void SendQueueProcessingCancelled(ILogger logger, Uri uri);
+
+  /// <summary>
+  /// Log message for when the receiving queue processing is cancelled
+  /// </summary>
+  /// <param name="logger"> The logger </param>
+  /// <param name="uri"> The uri </param>
+  [LoggerMessage(
+    EventId = 16,
+    Level = LogLevel.Debug,
+    Message = "Receiving queue processing cancelled for URI: {Uri}"
+  )]
+  public static partial void ReceiveQueueProcessingCancelled(ILogger logger, Uri uri);
+
+  /// <summary>
+  /// Log message for when the receiving queue processing has an error
+  /// </summary>
+  /// <param name="logger"> The logger </param>
+  /// <param name="error"> The error that occurred </param>
+  /// <param name="uri"> The uri </param>
+  [LoggerMessage(
+    EventId = 17,
+    Level = LogLevel.Error,
+    Message = "Receiving queue processing error for URI: {Uri}"
+  )]
+  public static partial void ReceiveQueueProcessingError(ILogger logger, Exception error, Uri uri);
 }
