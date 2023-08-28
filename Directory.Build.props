@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <Version>0.18.0</Version>
+    <Version>0.19.0</Version>
     <PackageVersion>$(Version)</PackageVersion>
     <Authors>Elvis Nieves Miranda</Authors>
     <PackageTags>Blazor;Reports;Component;convert;pdf;Components</PackageTags>
