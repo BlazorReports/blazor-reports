@@ -224,4 +224,18 @@ public static partial class LogMessages
     Message = "Receiving queue processing error for URI: {Uri}"
   )]
   public static partial void ReceiveQueueProcessingError(ILogger logger, Exception error, Uri uri);
+
+  // BrowserPage Messages
+
+  /// <summary>
+  /// Log message for when a browser page is being disposed
+  /// </summary>
+  /// <param name="logger"> The logger </param>
+  /// <param name="browserPageTargetId"> The target id of the browser page </param>
+  [LoggerMessage(
+    EventId = 18,
+    Level = LogLevel.Debug,
+    Message = "Disposing of browser page with target id: {BrowserPageTargetId}"
+  )]
+  public static partial void BrowserPageDispose(ILogger logger, string browserPageTargetId);
 }

@@ -4,8 +4,10 @@ using System.Security.Cryptography;
 using System.Text;
 using BlazorReports.Enums;
 using BlazorReports.Models;
+using BlazorReports.Services.BrowserServices.Logs;
 using BlazorReports.Services.BrowserServices.Requests;
 using BlazorReports.Services.BrowserServices.Responses;
+using Microsoft.Extensions.Logging;
 
 namespace BlazorReports.Services.BrowserServices;
 
@@ -14,6 +16,8 @@ namespace BlazorReports.Services.BrowserServices;
 /// </summary>
 internal sealed class BrowserPage : IAsyncDisposable
 {
+  private readonly ILogger<BrowserPage> _logger;
+
   /// <summary>
   /// The id of the page in the browser
   /// </summary>
@@ -24,10 +28,12 @@ internal sealed class BrowserPage : IAsyncDisposable
   /// <summary>
   /// Creates a new instance of the BrowserPage
   /// </summary>
+  /// <param name="logger"> The logger</param>
   /// <param name="targetId"> The id of the page in the browser</param>
   /// <param name="connection"> The connection to the browser</param>
-  public BrowserPage(string targetId, Connection connection)
+  public BrowserPage(ILogger<BrowserPage> logger, string targetId, Connection connection)
   {
+    _logger = logger;
     TargetId = targetId;
     _connection = connection;
     _transform = new CustomFromBase64Transform(FromBase64TransformMode.IgnoreWhiteSpaces);
@@ -206,6 +212,7 @@ internal sealed class BrowserPage : IAsyncDisposable
   /// </summary>
   public async ValueTask DisposeAsync()
   {
+    LogMessages.BrowserPageDispose(_logger, TargetId);
     await _connection.DisposeAsync();
     _transform.Dispose();
   }

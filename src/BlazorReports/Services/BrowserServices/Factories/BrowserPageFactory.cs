@@ -1,9 +1,11 @@
 using BlazorReports.Models;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace BlazorReports.Services.BrowserServices.Factories;
 
 internal sealed class BrowserPageFactory(
+  ILogger<BrowserPage> logger,
   IOptions<BlazorReportsOptions> options,
   IConnectionFactory connectionFactory
 ) : IBrowserPageFactory
@@ -20,7 +22,7 @@ internal sealed class BrowserPageFactory(
       pageUri,
       options.Value.BrowserOptions.ResponseTimeout
     );
-    var browserPage = new BrowserPage(targetId, pageConnection);
+    var browserPage = new BrowserPage(logger, targetId, pageConnection);
     return browserPage;
   }
 }
