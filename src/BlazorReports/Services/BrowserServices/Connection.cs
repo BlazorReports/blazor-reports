@@ -111,6 +111,7 @@ internal sealed class Connection : IAsyncDisposable
         LogMessages.UnableToEstablishWebSocketConnection(_logger, Uri);
         return new ConnectionProblem();
       }
+
       return new Success();
     }
     finally
@@ -184,6 +185,10 @@ internal sealed class Connection : IAsyncDisposable
     catch (OperationCanceledException)
     {
       LogMessages.ReceiveQueueProcessingCancelled(_logger, Uri);
+    }
+    catch (WebSocketException)
+    {
+      // The remote endpoint closed the WebSocket connection without completing the close handshake
     }
     catch (Exception ex)
     {
