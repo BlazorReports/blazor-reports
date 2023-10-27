@@ -122,9 +122,7 @@ internal sealed class Connection : IAsyncDisposable
 
   private async Task ProcessSendQueueAsync()
   {
-    var bufferToSend = _bufferPool.Rent(BufferSize);
-    var bufferToSendMemory = new Memory<byte>(bufferToSend);
-
+    byte[]? bufferToSend = null;
     try
     {
       while (!_cts.IsCancellationRequested)
@@ -138,6 +136,8 @@ internal sealed class Connection : IAsyncDisposable
           message,
           BrowserMessageSerializationContext.Default.BrowserMessage
         );
+        bufferToSend = _bufferPool.Rent(buffer.Length);
+        var bufferToSendMemory = new Memory<byte>(bufferToSend);
         buffer.CopyTo(bufferToSendMemory);
         await _webSocket.SendAsync(
           bufferToSendMemory[..buffer.Length],
@@ -153,7 +153,8 @@ internal sealed class Connection : IAsyncDisposable
     }
     finally
     {
-      _bufferPool.Return(bufferToSend);
+      if (bufferToSend is not null)
+        _bufferPool.Return(bufferToSend);
     }
   }
 
