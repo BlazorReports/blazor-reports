@@ -74,12 +74,14 @@ public sealed class ReportService : IReportService
     };
 
     await using var htmlRenderer = new HtmlRenderer(scope.ServiceProvider, loggerFactory);
-    var html = await htmlRenderer.Dispatcher.InvokeAsync(async () =>
-    {
-      var parameters = ParameterView.FromDictionary(componentParameters);
-      var output = await htmlRenderer.RenderComponentAsync<T>(parameters);
-      return output.ToHtmlString();
-    });
+    var html = await htmlRenderer
+      .Dispatcher
+      .InvokeAsync(async () =>
+      {
+        var parameters = ParameterView.FromDictionary(componentParameters);
+        var output = await htmlRenderer.RenderComponentAsync<T>(parameters);
+        return output.ToHtmlString();
+      });
 
     return await _browserService.GenerateReport(
       pipeWriter,
@@ -150,12 +152,14 @@ public sealed class ReportService : IReportService
     baseComponentParameters.Add("ChildComponentParameters", childComponentParameters);
 
     await using var htmlRenderer = new HtmlRenderer(scope.ServiceProvider, loggerFactory);
-    var html = await htmlRenderer.Dispatcher.InvokeAsync(async () =>
-    {
-      var parameters = ParameterView.FromDictionary(baseComponentParameters);
-      var output = await htmlRenderer.RenderComponentAsync<BlazorReportsTemplate>(parameters);
-      return output.ToHtmlString();
-    });
+    var html = await htmlRenderer
+      .Dispatcher
+      .InvokeAsync(async () =>
+      {
+        var parameters = ParameterView.FromDictionary(baseComponentParameters);
+        var output = await htmlRenderer.RenderComponentAsync<BlazorReportsTemplate>(parameters);
+        return output.ToHtmlString();
+      });
 
     var pageSettings = blazorReport.PageSettings ?? _reportRegistry.DefaultPageSettings;
 
