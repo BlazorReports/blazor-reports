@@ -94,10 +94,10 @@ public static class ReportExtensions
         ) =>
         {
           context.Response.ContentType = "application/pdf";
-          context.Response.Headers.Append(
-            "Content-Disposition",
-            $"attachment; filename=\"{blazorReport.Name}.pdf\""
-          );
+          context
+            .Response
+            .Headers
+            .Append("Content-Disposition", $"attachment; filename=\"{blazorReport.Name}.pdf\"");
           var result = await reportService.GenerateReport(
             context.Response.BodyWriter,
             blazorReport,
@@ -155,10 +155,10 @@ public static class ReportExtensions
         ) =>
         {
           context.Response.ContentType = "application/pdf";
-          context.Response.Headers.Append(
-            "Content-Disposition",
-            $"attachment; filename=\"{blazorReport.Name}.pdf\""
-          );
+          context
+            .Response
+            .Headers
+            .Append("Content-Disposition", $"attachment; filename=\"{blazorReport.Name}.pdf\"");
           var result = await reportService.GenerateReport(
             context.Response.BodyWriter,
             blazorReport,
@@ -190,7 +190,8 @@ public static class ReportExtensions
   )
   {
     var options = new BlazorReportRegistrationOptions();
-    var globalOptions = serviceScope.ServiceProvider
+    var globalOptions = serviceScope
+      .ServiceProvider
       .GetRequiredService<IOptionsSnapshot<BlazorReportsOptions>>()
       .Value;
     options.PageSettings = globalOptions.PageSettings;
