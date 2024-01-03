@@ -15,6 +15,6 @@ if (app.Environment.IsDevelopment())
   app.UseSwaggerUI();
 }
 
-app.MapBlazorReport<MyReport, MyReportData>();
+app.MapGroup("reports").MapBlazorReport<HelloReport, HelloReportData>();
 
 app.Run();
