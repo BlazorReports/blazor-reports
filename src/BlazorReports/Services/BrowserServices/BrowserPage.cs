@@ -135,9 +135,10 @@ internal sealed class BrowserPage : IAsyncDisposable
   )
   {
     var message = new BrowserMessage("Page.printToPDF");
-    message
-      .Parameters
-      .Add("landscape", pageSettings.Orientation == BlazorReportsPageOrientation.Landscape);
+    message.Parameters.Add(
+      "landscape",
+      pageSettings.Orientation == BlazorReportsPageOrientation.Landscape
+    );
     message.Parameters.Add("paperHeight", pageSettings.PaperHeight);
     message.Parameters.Add("paperWidth", pageSettings.PaperWidth);
     message.Parameters.Add("marginTop", pageSettings.MarginTop);
