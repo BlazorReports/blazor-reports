@@ -1,0 +1,9 @@
+###
+@ReportServer_HostAddress = http://localhost:5054
+
+POST {{ReportServer_HostAddress}}/reports/myreport
+Content-Type: application/json
+
+{
+  "name": "My Report"
+}
