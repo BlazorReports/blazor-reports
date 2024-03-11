@@ -29,11 +29,9 @@ Generate PDF reports using Blazor Components. Easily create a report server or g
     ``` 
 3. Send HTTP POST request to the Blazor Reports endpoint:
     ```http
-    # Default endpoint for reports is `/reports/{componentName}`
+    POST /MyBlazorComponent
    
-    POST /reports/MyBlazorComponent
-   
-    POST /reports/OtherBlazorComponent
+    POST /OtherBlazorComponent
     Content-Type: application/json
     {
       "text": "Hello World!"

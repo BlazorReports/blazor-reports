@@ -86,7 +86,7 @@ public static class ReportExtensions
 
     return endpoints
       .MapPost(
-        $"reports/{blazorReport.NormalizedName}",
+        $"{blazorReport.NormalizedName}",
         async (
           [FromServices] IReportService reportService,
           HttpContext context,
@@ -146,7 +146,7 @@ public static class ReportExtensions
 
     return endpoints
       .MapPost(
-        $"reports/{blazorReport.NormalizedName}",
+        $"{blazorReport.NormalizedName}",
         async (
           TD data,
           [FromServices] IReportService reportService,
