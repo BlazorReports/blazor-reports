@@ -1,7 +1,7 @@
 using BlazorReports.Extensions;
 using SimpleReportServer;
 
-var builder = WebApplication.CreateBuilder(args);
+var builder = WebApplication.CreateSlimBuilder(args);
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
