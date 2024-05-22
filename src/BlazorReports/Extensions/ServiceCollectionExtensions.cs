@@ -2,6 +2,8 @@ using BlazorReports.Models;
 using BlazorReports.Services;
 using BlazorReports.Services.BrowserServices;
 using BlazorReports.Services.BrowserServices.Factories;
+using Microsoft.AspNetCore.Routing;
+using Microsoft.AspNetCore.Routing.Constraints;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace BlazorReports.Extensions;
@@ -29,6 +31,10 @@ public static class ServiceCollectionExtensions
     services.AddSingleton<IBrowserPageFactory, BrowserPageFactory>();
     services.AddSingleton<IBrowserService, BrowserService>();
     services.AddSingleton<IReportService, ReportService>();
+
+    services.Configure<RouteOptions>(routeOptions =>
+      routeOptions.SetParameterPolicy<RegexInlineRouteConstraint>("regex")
+    );
 
     return services;
   }
