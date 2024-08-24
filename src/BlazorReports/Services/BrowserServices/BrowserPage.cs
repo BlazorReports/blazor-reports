@@ -14,30 +14,24 @@ namespace BlazorReports.Services.BrowserServices;
 /// <summary>
 /// Represents a page in the browser
 /// </summary>
-internal sealed class BrowserPage : IAsyncDisposable
+/// <remarks>
+/// Creates a new instance of the BrowserPage
+/// </remarks>
+/// <param name="logger"> The logger</param>
+/// <param name="targetId"> The id of the page in the browser</param>
+/// <param name="connection"> The connection to the browser</param>
+internal sealed class BrowserPage(
+  ILogger<BrowserPage> logger,
+  string targetId,
+  Connection connection
+) : IAsyncDisposable
 {
-  private readonly ILogger<BrowserPage> _logger;
-
   /// <summary>
   /// The id of the page in the browser
   /// </summary>
-  internal readonly string TargetId;
-  private readonly Connection _connection;
-  private readonly CustomFromBase64Transform _transform;
-
-  /// <summary>
-  /// Creates a new instance of the BrowserPage
-  /// </summary>
-  /// <param name="logger"> The logger</param>
-  /// <param name="targetId"> The id of the page in the browser</param>
-  /// <param name="connection"> The connection to the browser</param>
-  public BrowserPage(ILogger<BrowserPage> logger, string targetId, Connection connection)
-  {
-    _logger = logger;
-    TargetId = targetId;
-    _connection = connection;
-    _transform = new CustomFromBase64Transform(FromBase64TransformMode.IgnoreWhiteSpaces);
-  }
+  internal readonly string TargetId = targetId;
+  private readonly CustomFromBase64Transform _transform =
+    new(FromBase64TransformMode.IgnoreWhiteSpaces);
 
   /// <summary>
   /// Displays the HTML in the browser
@@ -47,17 +41,17 @@ internal sealed class BrowserPage : IAsyncDisposable
   /// <exception cref="ArgumentException"> Thrown when the HTML is null or whitespace</exception>
   internal async Task DisplayHtml(string html, CancellationToken stoppingToken = default)
   {
-    await _connection.ConnectAsync(stoppingToken);
+    await connection.ConnectAsync(stoppingToken);
     if (string.IsNullOrWhiteSpace(html))
       throw new ArgumentException("Value cannot be null or whitespace.", nameof(html));
 
     // Enables or disables the cache
     var cacheMessage = new BrowserMessage("Network.setCacheDisabled");
     cacheMessage.Parameters.Add("cacheDisabled", false);
-    _connection.SendAsync(cacheMessage);
+    connection.SendAsync(cacheMessage);
 
     var getPageFrameTreeMessage = new BrowserMessage("Page.getFrameTree");
-    await _connection.SendAsync(
+    await connection.SendAsync(
       getPageFrameTreeMessage,
       PageGetFrameTreeResponseSerializationContext
         .Default
@@ -67,7 +61,7 @@ internal sealed class BrowserPage : IAsyncDisposable
         var pageSetDocumentContentMessage = new BrowserMessage("Page.setDocumentContent");
         pageSetDocumentContentMessage.Parameters.Add("frameId", response.Result.FrameTree.Frame.Id);
         pageSetDocumentContentMessage.Parameters.Add("html", html);
-        _connection.SendAsync(pageSetDocumentContentMessage);
+        connection.SendAsync(pageSetDocumentContentMessage);
       },
       stoppingToken
     );
@@ -79,10 +73,10 @@ internal sealed class BrowserPage : IAsyncDisposable
     CancellationToken stoppingToken = default
   )
   {
-    await _connection.ConnectAsync(stoppingToken);
+    await connection.ConnectAsync(stoppingToken);
     var message = CreatePrintToPdfBrowserMessage(pageSettings);
 
-    await _connection.SendAsync(
+    await connection.SendAsync(
       message,
       PagePrintToPdfResponseSerializationContext
         .Default
@@ -101,7 +95,7 @@ internal sealed class BrowserPage : IAsyncDisposable
         {
           if (finished)
             break;
-          await _connection.SendAsync(
+          await connection.SendAsync(
             ioReadMessage,
             IoReadResponseSerializationContext.Default.BrowserResultResponseIoReadResponse,
             async ioReadResponse =>
@@ -201,10 +195,10 @@ internal sealed class BrowserPage : IAsyncDisposable
 
   private async ValueTask ClosePdfStream(string stream, CancellationToken stoppingToken = default)
   {
-    await _connection.ConnectAsync(stoppingToken);
+    await connection.ConnectAsync(stoppingToken);
     var ioCloseMessage = new BrowserMessage("IO.close");
     ioCloseMessage.Parameters.Add("handle", stream);
-    _connection.SendAsync(ioCloseMessage);
+    connection.SendAsync(ioCloseMessage);
   }
 
   /// <summary>
@@ -212,8 +206,8 @@ internal sealed class BrowserPage : IAsyncDisposable
   /// </summary>
   public async ValueTask DisposeAsync()
   {
-    LogMessages.BrowserPageDispose(_logger, TargetId);
-    await _connection.DisposeAsync();
+    LogMessages.BrowserPageDispose(logger, TargetId);
+    await connection.DisposeAsync();
     _transform.Dispose();
   }
 }

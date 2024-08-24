@@ -93,10 +93,12 @@ public static class ReportExtensions
           CancellationToken token
         ) =>
         {
-          context.Response.ContentType = "application/pdf";
+          var contentType = blazorReport.GetContentType();
+          var extension = blazorReport.GetFileExtension();
+          context.Response.ContentType = contentType;
           context.Response.Headers.Append(
             "Content-Disposition",
-            $"attachment; filename=\"{blazorReport.Name}.pdf\""
+            $"attachment; filename=\"{blazorReport.Name}.{extension}\""
           );
           var result = await reportService.GenerateReport(
             context.Response.BodyWriter,
@@ -118,7 +120,7 @@ public static class ReportExtensions
           }
         }
       )
-      .Produces<FileStreamHttpResult>(200, "application/pdf")
+      .Produces<FileStreamHttpResult>(200, blazorReport.GetContentType())
       .Produces(StatusCodes.Status503ServiceUnavailable);
   }
 
@@ -154,10 +156,12 @@ public static class ReportExtensions
           CancellationToken token
         ) =>
         {
-          context.Response.ContentType = "application/pdf";
+          var contentType = blazorReport.GetContentType();
+          var extension = blazorReport.GetFileExtension();
+          context.Response.ContentType = contentType;
           context.Response.Headers.Append(
             "Content-Disposition",
-            $"attachment; filename=\"{blazorReport.Name}.pdf\""
+            $"attachment; filename=\"{blazorReport.Name}.{extension}\""
           );
           var result = await reportService.GenerateReport(
             context.Response.BodyWriter,
@@ -180,7 +184,7 @@ public static class ReportExtensions
           }
         }
       )
-      .Produces<FileStreamHttpResult>(200, "application/pdf")
+      .Produces<FileStreamHttpResult>(200, blazorReport.GetContentType())
       .Produces(StatusCodes.Status503ServiceUnavailable);
   }
 

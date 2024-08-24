@@ -76,6 +76,7 @@ public class BlazorReportRegistry
       );
     var blazorReport = new BlazorReport
     {
+      OutputFormat = options?.OutputFormat ?? ReportOutputFormat.Pdf,
       Name = reportNameToUse,
       NormalizedName = normalizedReportName,
       Component = typeof(T),
@@ -124,6 +125,7 @@ public class BlazorReportRegistry
       );
     var blazorReport = new BlazorReport
     {
+      OutputFormat = options?.OutputFormat ?? ReportOutputFormat.Pdf,
       Name = reportNameToUse,
       NormalizedName = normalizedReportName,
       Component = typeof(T),
