@@ -6,6 +6,11 @@ namespace BlazorReports.Models;
 public class BlazorReportRegistrationOptions
 {
   /// <summary>
+  /// Output format for the report. Defaults to PDF.
+  /// </summary>
+  public ReportOutputFormat OutputFormat { get; set; } = ReportOutputFormat.Pdf;
+
+  /// <summary>
   /// The name of the report. This is utilized to generate the route for the report.
   /// </summary>
   public string? ReportName { get; set; }

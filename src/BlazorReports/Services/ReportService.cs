@@ -15,29 +15,18 @@ namespace BlazorReports.Services;
 /// <summary>
 /// Service for generating reports
 /// </summary>
-public sealed class ReportService : IReportService
+/// <remarks>
+/// Creates a new instance of <see cref="ReportService"/>
+/// </remarks>
+/// <param name="serviceProvider"> The service provider </param>
+/// <param name="reportRegistry"> The report registry </param>
+/// <param name="browserService"></param>
+public sealed class ReportService(
+  IServiceProvider serviceProvider,
+  BlazorReportRegistry reportRegistry,
+  IBrowserService browserService
+) : IReportService
 {
-  private readonly IServiceProvider _serviceProvider;
-  private readonly BlazorReportRegistry _reportRegistry;
-  private readonly IBrowserService _browserService;
-
-  /// <summary>
-  /// Creates a new instance of <see cref="ReportService"/>
-  /// </summary>
-  /// <param name="serviceProvider"> The service provider </param>
-  /// <param name="reportRegistry"> The report registry </param>
-  /// <param name="browserService"></param>
-  public ReportService(
-    IServiceProvider serviceProvider,
-    BlazorReportRegistry reportRegistry,
-    IBrowserService browserService
-  )
-  {
-    _serviceProvider = serviceProvider;
-    _reportRegistry = reportRegistry;
-    _browserService = browserService;
-  }
-
   /// <summary>
   /// Generates a report using the specified component and data
   /// </summary>
@@ -57,20 +46,20 @@ public sealed class ReportService : IReportService
     where T : ComponentBase
     where TD : class
   {
-    using var scope = _serviceProvider.CreateScope();
+    using var scope = serviceProvider.CreateScope();
     var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
 
     var baseStyles = string.Empty;
-    if (!string.IsNullOrEmpty(_reportRegistry.BaseStyles))
+    if (!string.IsNullOrEmpty(reportRegistry.BaseStyles))
     {
-      baseStyles = _reportRegistry.BaseStyles;
+      baseStyles = reportRegistry.BaseStyles;
     }
 
     var componentParameters = new Dictionary<string, object?>
     {
       { "BaseStyles", baseStyles },
       { "Data", data },
-      { "GlobalAssets", _reportRegistry.GlobalAssets }
+      { "GlobalAssets", reportRegistry.GlobalAssets }
     };
 
     await using var htmlRenderer = new HtmlRenderer(scope.ServiceProvider, loggerFactory);
@@ -81,10 +70,10 @@ public sealed class ReportService : IReportService
       return output.ToHtmlString();
     });
 
-    return await _browserService.GenerateReport(
+    return await browserService.GenerateReport(
       pipeWriter,
       html,
-      _reportRegistry.DefaultPageSettings,
+      reportRegistry.DefaultPageSettings,
       cancellationToken
     );
   }
@@ -108,7 +97,7 @@ public sealed class ReportService : IReportService
   )
     where T : class
   {
-    using var scope = _serviceProvider.CreateScope();
+    using var scope = serviceProvider.CreateScope();
     var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
 
     var baseStyles = string.Empty;
@@ -116,18 +105,18 @@ public sealed class ReportService : IReportService
     {
       baseStyles = blazorReport.BaseStyles;
     }
-    else if (!string.IsNullOrEmpty(_reportRegistry.BaseStyles))
+    else if (!string.IsNullOrEmpty(reportRegistry.BaseStyles))
     {
-      baseStyles = _reportRegistry.BaseStyles;
+      baseStyles = reportRegistry.BaseStyles;
     }
 
     var childComponentParameters = new Dictionary<string, object?>();
     if (
       blazorReport.Component.BaseType == typeof(BlazorReportsBase)
-      && _reportRegistry.GlobalAssets.Count != 0
+      && reportRegistry.GlobalAssets.Count != 0
     )
     {
-      childComponentParameters.Add("GlobalAssets", _reportRegistry.GlobalAssets);
+      childComponentParameters.Add("GlobalAssets", reportRegistry.GlobalAssets);
     }
 
     if (blazorReport.Assets.Count != 0)
@@ -150,16 +139,32 @@ public sealed class ReportService : IReportService
     baseComponentParameters.Add("ChildComponentParameters", childComponentParameters);
 
     await using var htmlRenderer = new HtmlRenderer(scope.ServiceProvider, loggerFactory);
-    var html = await htmlRenderer.Dispatcher.InvokeAsync(async () =>
+
+    if (blazorReport.OutputFormat == ReportOutputFormat.Pdf)
     {
-      var parameters = ParameterView.FromDictionary(baseComponentParameters);
-      var output = await htmlRenderer.RenderComponentAsync<BlazorReportsTemplate>(parameters);
-      return output.ToHtmlString();
-    });
+      var html = await htmlRenderer.Dispatcher.InvokeAsync(async () =>
+      {
+        var parameters = ParameterView.FromDictionary(baseComponentParameters);
+        var output = await htmlRenderer.RenderComponentAsync<BlazorReportsTemplate>(parameters);
+        return output.ToHtmlString();
+      });
 
-    var pageSettings = blazorReport.PageSettings ?? _reportRegistry.DefaultPageSettings;
+      var pageSettings = blazorReport.PageSettings ?? reportRegistry.DefaultPageSettings;
 
-    return await _browserService.GenerateReport(pipeWriter, html, pageSettings, cancellationToken);
+      return await browserService.GenerateReport(pipeWriter, html, pageSettings, cancellationToken);
+    }
+    else
+    {
+      var html = await htmlRenderer.Dispatcher.InvokeAsync(async () =>
+      {
+        var parameters = ParameterView.FromDictionary(baseComponentParameters);
+        var output = await htmlRenderer.RenderComponentAsync<BlazorReportsTemplate>(parameters);
+        return output.ToHtmlString();
+      });
+
+      await pipeWriter.WriteAsync(System.Text.Encoding.UTF8.GetBytes(html), cancellationToken);
+      return new Success();
+    }
   }
 
   /// <summary>
@@ -188,7 +193,7 @@ public sealed class ReportService : IReportService
   public BlazorReport? GetReportByName(string name)
   {
     var reportNormalizedName = name.ToLowerInvariant().Trim();
-    var foundReport = _reportRegistry.Reports.TryGetValue(reportNormalizedName, out var report);
+    var foundReport = reportRegistry.Reports.TryGetValue(reportNormalizedName, out var report);
     return foundReport ? report : null;
   }
 }

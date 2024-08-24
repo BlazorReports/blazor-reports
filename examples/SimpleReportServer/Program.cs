@@ -1,4 +1,5 @@
 using BlazorReports.Extensions;
+using BlazorReports.Models;
 using SimpleReportServer;
 
 var builder = WebApplication.CreateSlimBuilder(args);
@@ -16,5 +17,11 @@ if (app.Environment.IsDevelopment())
 }
 
 app.MapGroup("reports").MapBlazorReport<HelloReport, HelloReportData>();
+app.MapGroup("reports")
+  .MapBlazorReport<HelloReport, HelloReportData>(opts =>
+  {
+    opts.ReportName = "HelloReportHtml";
+    opts.OutputFormat = ReportOutputFormat.Html;
+  });
 
 app.Run();

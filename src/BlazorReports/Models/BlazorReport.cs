@@ -6,6 +6,11 @@ namespace BlazorReports.Models;
 public class BlazorReport
 {
   /// <summary>
+  /// Output format for the report. Defaults to PDF.
+  /// </summary>
+  public ReportOutputFormat OutputFormat { get; set; } = ReportOutputFormat.Pdf;
+
+  /// <summary>
   /// The name of the report.
   /// </summary>
   public required string Name { get; set; }
@@ -33,7 +38,7 @@ public class BlazorReport
   /// <summary>
   /// Assets path to use for the report.
   /// </summary>
-  public Dictionary<string, string> Assets { get; set; } = new();
+  public Dictionary<string, string> Assets { get; set; } = [];
 
   /// <summary>
   /// The page settings to use for the report.
