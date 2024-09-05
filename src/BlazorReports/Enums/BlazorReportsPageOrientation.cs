@@ -13,5 +13,5 @@ public enum BlazorReportsPageOrientation
   /// <summary>
   /// Portrait orientation
   /// </summary>
-  Portrait
+  Portrait,
 }

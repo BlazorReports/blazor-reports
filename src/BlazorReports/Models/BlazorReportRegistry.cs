@@ -81,7 +81,7 @@ public class BlazorReportRegistry
       NormalizedName = normalizedReportName,
       Component = typeof(T),
       Data = null,
-      PageSettings = options?.PageSettings
+      PageSettings = options?.PageSettings,
     };
     if (!string.IsNullOrEmpty(options?.BaseStylesPath))
     {
@@ -130,7 +130,7 @@ public class BlazorReportRegistry
       NormalizedName = normalizedReportName,
       Component = typeof(T),
       Data = typeof(TD),
-      PageSettings = options?.PageSettings
+      PageSettings = options?.PageSettings,
     };
     if (!string.IsNullOrEmpty(options?.BaseStylesPath))
     {

@@ -59,7 +59,7 @@ public sealed class ReportService(
     {
       { "BaseStyles", baseStyles },
       { "Data", data },
-      { "GlobalAssets", reportRegistry.GlobalAssets }
+      { "GlobalAssets", reportRegistry.GlobalAssets },
     };
 
     await using var htmlRenderer = new HtmlRenderer(scope.ServiceProvider, loggerFactory);

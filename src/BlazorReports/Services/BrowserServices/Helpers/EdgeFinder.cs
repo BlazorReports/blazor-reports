@@ -26,7 +26,7 @@ internal static class EdgeFinder
     "/usr/bin",
     "/sbin",
     "/bin",
-    "/opt/microsoft/edge"
+    "/opt/microsoft/edge",
   };
 
   /// <summary>
