@@ -1,8 +1,9 @@
-FROM mcr.microsoft.com/dotnet/sdk:8.0-preview
+FROM mcr.microsoft.com/devcontainers/dotnet:8.0
 
-RUN apt-get update && apt-get install -y wget gnupg lsb-release fonts-liberation && \
-    wget --quiet --output-document=- https://dl-ssl.google.com/linux/linux_signing_key.pub | gpg --dearmor > /etc/apt/trusted.gpg.d/google-archive.gpg && \
-    sh -c 'echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list' && \
-    apt-get update && \
-    apt-get install chromium -y --no-install-recommends && \
-    rm -rf /var/lib/apt/lists/*
+# Install Node and Bun
+COPY tools/node_bun-install.sh /tmp/node_bun-install.sh
+RUN su vscode -c "/bin/bash /tmp/node_bun-install.sh" 2>&1
+
+# Install Chromium
+COPY tools/chromium-install.sh /tmp/chromium-install.sh
+RUN su vscode -c "/bin/bash /tmp/chromium-install.sh" 2>&1
