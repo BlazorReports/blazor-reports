@@ -11,12 +11,13 @@
   "customizations": {
     "vscode": {
       "extensions": [
-        "ms-dotnettools.csdevkit@prerelease",
+        "ms-dotnettools.csdevkit",
         "ms-azuretools.vscode-docker",
         "GitHub.copilot-chat",
         "GitHub.copilot",
         "esbenp.prettier-vscode",
-        "editorconfig.editorconfig"
+        "editorconfig.editorconfig",
+        "csharpier.csharpier-vscode"
       ]
     }
   },
