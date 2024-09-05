@@ -13,5 +13,5 @@ public enum Browsers
   /// <summary>
   /// Microsoft Edge
   /// </summary>
-  Edge
+  Edge,
 }

@@ -126,7 +126,7 @@ internal sealed class BrowserFactory(
       "--no-first-run",
       "--disable-crash-reporter",
       "--remote-debugging-port=\"0\"",
-      $"--user-data-dir=\"{devToolsDirectory}\""
+      $"--user-data-dir=\"{devToolsDirectory}\"",
     };
 
     if (browserOptions.NoSandbox)
@@ -142,7 +142,7 @@ internal sealed class BrowserFactory(
     {
       FileName = chromiumExeFileName,
       Arguments = chromiumArguments,
-      CreateNoWindow = true
+      CreateNoWindow = true,
     };
 
     chromiumProcess.StartInfo = processStartInfo;
@@ -179,7 +179,7 @@ internal sealed class BrowserFactory(
     {
       Path = devToolsActivePortDirectory.FullName,
       Filter = Path.GetFileName(devToolsActivePortFile),
-      EnableRaisingEvents = true
+      EnableRaisingEvents = true,
     };
 
     var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10)); // 10 second timeout

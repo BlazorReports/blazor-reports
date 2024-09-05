@@ -13,5 +13,5 @@ public enum ReportOutputFormat
   /// <summary>
   /// HyperText Markup Language
   /// </summary>
-  Html
+  Html,
 }

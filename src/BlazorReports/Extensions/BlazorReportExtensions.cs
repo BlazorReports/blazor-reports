@@ -18,7 +18,7 @@ public static class BlazorReportExtensions
     {
       ReportOutputFormat.Pdf => "application/pdf",
       ReportOutputFormat.Html => "text/html",
-      _ => "application/pdf"
+      _ => "application/pdf",
     };
   }
 
@@ -33,7 +33,7 @@ public static class BlazorReportExtensions
     {
       ReportOutputFormat.Pdf => "pdf",
       ReportOutputFormat.Html => "html",
-      _ => "pdf"
+      _ => "pdf",
     };
   }
 }

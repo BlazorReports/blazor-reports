@@ -16,7 +16,7 @@ internal static class BrowserFinder
     {
       Browsers.Chrome => ChromeFinder.Find(),
       Browsers.Edge => EdgeFinder.Find(),
-      _ => string.Empty
+      _ => string.Empty,
     };
   }
 }

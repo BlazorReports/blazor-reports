@@ -27,7 +27,7 @@ internal static class ChromeFinder
     "/usr/bin",
     "/sbin",
     "/bin",
-    "/opt/microsoft/edge"
+    "/opt/microsoft/edge",
   };
 
   /// <summary>
@@ -131,7 +131,7 @@ internal static class ChromeFinder
           ChromeExecutableNameLinux1,
           ChromeExecutableNameLinux2,
           ChromeExecutableNameLinux3,
-          ChromeExecutableNameLinux4
+          ChromeExecutableNameLinux4,
         }
       );
     }
