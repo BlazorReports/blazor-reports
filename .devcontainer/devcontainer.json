@@ -4,7 +4,7 @@
   "name": "Blazor Reports Development",
   "build": {
     // Sets the run context to one level up instead of the .devcontainer folder.
-    "context": "..",
+    "context": ".",
     // Update the 'dockerFile' property if you aren't using the standard 'Dockerfile' filename.
     "dockerfile": "BlazorReports.Dev.Dockerfile"
   },
