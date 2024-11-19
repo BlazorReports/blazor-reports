@@ -36,18 +36,22 @@ internal sealed class BrowserFactory(
       : BrowserFinder.Find(browserOptions.Browser);
 
     if (!File.Exists(browserExecutableLocation))
+    {
       throw new FileNotFoundException(
         $"Could not find browser in location '{browserExecutableLocation}'"
       );
+    }
 
     var temporaryPath = Path.GetTempPath();
     var devToolsDirectory = Path.Combine(temporaryPath, Guid.NewGuid().ToString());
     Directory.CreateDirectory(devToolsDirectory);
-    var devToolsActivePortDirectory = new DirectoryInfo(devToolsDirectory);
+    DirectoryInfo devToolsActivePortDirectory = new(devToolsDirectory);
     var devToolsActivePortFile = Path.Combine(devToolsDirectory, "DevToolsActivePort");
 
     if (File.Exists(devToolsActivePortFile))
+    {
       File.Delete(devToolsActivePortFile);
+    }
 
     var chromiumProcess = CreateChromiumProcess(
       browserExecutableLocation,
@@ -82,7 +86,7 @@ internal sealed class BrowserFactory(
 
     LogMessages.BrowserDataDirectoryUsed(browserFactoryLogger, devToolsDirectory);
 
-    var uri = new Uri($"ws://127.0.0.1:{lines[0]}{lines[1]}");
+    Uri uri = new($"ws://127.0.0.1:{lines[0]}{lines[1]}");
     var connection = await connectionFactory.CreateConnection(uri, browserOptions.ResponseTimeout);
     return new Browser(
       chromiumProcess,
@@ -107,9 +111,9 @@ internal sealed class BrowserFactory(
     BlazorReportsBrowserOptions browserOptions
   )
   {
-    var chromiumProcess = new Process();
-    var defaultChromiumArgument = new List<string>
-    {
+    Process chromiumProcess = new();
+    List<string> defaultChromiumArgument =
+    [
       "--headless=new",
       "--disable-gpu",
       "--hide-scrollbars",
@@ -127,23 +131,28 @@ internal sealed class BrowserFactory(
       "--disable-crash-reporter",
       "--remote-debugging-port=\"0\"",
       $"--user-data-dir=\"{devToolsDirectory}\"",
-    };
+    ];
 
     if (browserOptions.NoSandbox)
+    {
       defaultChromiumArgument.Add("--no-sandbox");
+    }
 
     if (browserOptions.DisableDevShmUsage)
+    {
       defaultChromiumArgument.Add("--disable-dev-shm-usage");
+    }
 
     var chromiumArguments = string.Join(" ", defaultChromiumArgument);
     LogMessages.StartingChromiumProcess(browserFactoryLogger, chromiumArguments);
 
-    var processStartInfo = new ProcessStartInfo
-    {
-      FileName = chromiumExeFileName,
-      Arguments = chromiumArguments,
-      CreateNoWindow = true,
-    };
+    ProcessStartInfo processStartInfo =
+      new()
+      {
+        FileName = chromiumExeFileName,
+        Arguments = chromiumArguments,
+        CreateNoWindow = true,
+      };
 
     chromiumProcess.StartInfo = processStartInfo;
     chromiumProcess.Exited += ChromiumProcess_Exited;
@@ -159,9 +168,14 @@ internal sealed class BrowserFactory(
   {
     // Log errors with details
     if (sender is not Process process)
+    {
       return;
+    }
+
     if (process.ExitCode == 0)
+    {
       return;
+    }
 
     var exception = Marshal.GetExceptionForHR(process.ExitCode);
     LogMessages.ChromiumProcessCrashed(browserFactoryLogger, exception, process.ExitCode);
@@ -173,22 +187,28 @@ internal sealed class BrowserFactory(
   )
   {
     if (devToolsActivePortDirectory is null || !devToolsActivePortDirectory.Exists)
-      throw new DirectoryNotFoundException($"The {nameof(devToolsActivePortDirectory)} is null");
-
-    var watcher = new FileSystemWatcher
     {
-      Path = devToolsActivePortDirectory.FullName,
-      Filter = Path.GetFileName(devToolsActivePortFile),
-      EnableRaisingEvents = true,
-    };
+      throw new DirectoryNotFoundException($"The {nameof(devToolsActivePortDirectory)} is null");
+    }
 
-    var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10)); // 10 second timeout
-    var tcs = new TaskCompletionSource<string[]>();
+    FileSystemWatcher watcher =
+      new()
+      {
+        Path = devToolsActivePortDirectory.FullName,
+        Filter = Path.GetFileName(devToolsActivePortFile),
+        EnableRaisingEvents = true,
+      };
+
+    CancellationTokenSource cts = new(TimeSpan.FromSeconds(10)); // 10 second timeout
+    TaskCompletionSource<string[]> tcs = new();
 
     void CreatedHandler(object s, FileSystemEventArgs e)
     {
       if (e.ChangeType != WatcherChangeTypes.Created)
+      {
         return;
+      }
+
       HandleFileCreationAsync(devToolsActivePortFile, tcs, 5, 2).ConfigureAwait(false);
     }
 
@@ -258,11 +278,15 @@ internal sealed class BrowserFactory(
       catch (IOException)
       {
         if (++retryCount == maxRetries)
+        {
           tcs.TrySetException(
             new IOException($"Unable to read file '{filePath}' after {maxRetries} attempts")
           );
+        }
         else
+        {
           await Task.Delay(TimeSpan.FromMilliseconds(100 * retryCount)); // Exponential backoff
+        }
       }
       catch (Exception ex)
       {

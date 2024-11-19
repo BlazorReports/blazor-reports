@@ -16,7 +16,7 @@ internal sealed class ConnectionFactory(ILogger<Connection> logger) : IConnectio
   /// <returns> The connection</returns>
   public async ValueTask<Connection> CreateConnection(Uri uri, TimeSpan responseTimeout)
   {
-    var connection = new Connection(uri, responseTimeout, logger);
+    Connection connection = new(uri, responseTimeout, logger);
     await connection.InitializeAsync();
     return connection;
   }

@@ -22,7 +22,7 @@ internal sealed class BrowserPageFactory(
       pageUri,
       options.Value.BrowserOptions.ResponseTimeout
     );
-    var browserPage = new BrowserPage(logger, targetId, pageConnection);
+    BrowserPage browserPage = new(logger, targetId, pageConnection);
     return browserPage;
   }
 }

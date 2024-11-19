@@ -30,16 +30,8 @@ internal static class MimeTypes
   {
     var extension = Path.GetExtension(fileName).ToLowerInvariant();
 
-    if (string.IsNullOrEmpty(extension))
-    {
-      return UnknownMimeType;
-    }
-
-    if (!MimeTypesDictionary.TryGetValue(extension, out var mimeType))
-    {
-      return UnknownMimeType;
-    }
-
-    return mimeType;
+    return string.IsNullOrEmpty(extension)
+      ? UnknownMimeType
+      : MimeTypesDictionary.GetValueOrDefault(extension, UnknownMimeType);
   }
 }

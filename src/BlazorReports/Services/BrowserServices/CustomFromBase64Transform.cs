@@ -54,7 +54,7 @@ internal sealed class CustomFromBase64Transform(FromBase64TransformMode whitespa
       return 0;
     }
 
-    ConvertFromBase64(transformBuffer, outputBuffer[outputOffset..], out int written);
+    ConvertFromBase64(transformBuffer, outputBuffer[outputOffset..], out var written);
 
     ReturnToCryptoPool(transformBufferArray, transformBuffer.Length);
 
@@ -175,7 +175,10 @@ internal static class CryptoPool
 {
   private const int ClearAll = -1;
 
-  internal static byte[] Rent(int minimumLength) => ArrayPool<byte>.Shared.Rent(minimumLength);
+  internal static byte[] Rent(int minimumLength)
+  {
+    return ArrayPool<byte>.Shared.Rent(minimumLength);
+  }
 
   internal static void Return(byte[] array, int clearSize = ClearAll)
   {

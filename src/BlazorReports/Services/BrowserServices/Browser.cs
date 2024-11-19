@@ -79,7 +79,9 @@ internal sealed class Browser(
         }
 
         if (operationCancelled)
+        {
           return new OperationCancelledProblem();
+        }
 
         if (retryCount >= maxRetryCount)
         {
@@ -108,7 +110,9 @@ internal sealed class Browser(
     finally
     {
       if (browserPage is not null && !browserPagedDisposed)
+      {
         ReturnBrowserPage(browserPage);
+      }
     }
 
     return new Success();
@@ -169,11 +173,14 @@ internal sealed class Browser(
     try
     {
       if (_browserPagePool.Contains(browserPage))
+      {
         return;
+      }
+
       await browserPage.DisposeAsync();
       _currentBrowserPagePoolSize--;
 
-      var closeTargetMessage = new BrowserMessage("Target.closeTarget");
+      BrowserMessage closeTargetMessage = new("Target.closeTarget");
       closeTargetMessage.Parameters.Add("targetId", browserPage.TargetId);
       await connection.ConnectAsync();
       connection.SendAsync(closeTargetMessage);
@@ -191,7 +198,7 @@ internal sealed class Browser(
   /// <returns> The browser page </returns>
   private async ValueTask<BrowserPage> CreateBrowserPage(CancellationToken stoppingToken = default)
   {
-    var createTargetMessage = new BrowserMessage("Target.createTarget");
+    BrowserMessage createTargetMessage = new("Target.createTarget");
     createTargetMessage.Parameters.Add("url", "about:blank");
     await connection.ConnectAsync(stoppingToken);
     return await connection.SendAsync(
@@ -220,11 +227,16 @@ internal sealed class Browser(
     LogMessages.BrowserDispose(logger, chromiumProcess.Id);
     _poolLock.Dispose();
     foreach (var browserPage in _browserPagePool)
+    {
       await browserPage.DisposeAsync();
+    }
+
     chromiumProcess.Kill();
     chromiumProcess.Dispose();
     await connection.DisposeAsync();
     if (dataDirectory.Exists)
+    {
       Directory.Delete(dataDirectory.FullName, true);
+    }
   }
 }

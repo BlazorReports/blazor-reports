@@ -14,5 +14,4 @@ public sealed record PageGetFrameTreeResponse(BrowserFrameTree FrameTree);
 /// </summary>
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
 [JsonSerializable(typeof(BrowserResultResponse<PageGetFrameTreeResponse>))]
-internal sealed partial class PageGetFrameTreeResponseSerializationContext
-  : JsonSerializerContext { }
+internal sealed partial class PageGetFrameTreeResponseSerializationContext : JsonSerializerContext;

@@ -55,17 +55,18 @@ public sealed class ReportService(
       baseStyles = reportRegistry.BaseStyles;
     }
 
-    var componentParameters = new Dictionary<string, object?>
-    {
-      { "BaseStyles", baseStyles },
-      { "Data", data },
-      { "GlobalAssets", reportRegistry.GlobalAssets },
-    };
+    Dictionary<string, object?> componentParameters =
+      new()
+      {
+        { "BaseStyles", baseStyles },
+        { "Data", data },
+        { "GlobalAssets", reportRegistry.GlobalAssets },
+      };
 
-    await using var htmlRenderer = new HtmlRenderer(scope.ServiceProvider, loggerFactory);
+    await using HtmlRenderer htmlRenderer = new(scope.ServiceProvider, loggerFactory);
     var html = await htmlRenderer.Dispatcher.InvokeAsync(async () =>
     {
-      var parameters = ParameterView.FromDictionary(componentParameters);
+      ParameterView parameters = ParameterView.FromDictionary(componentParameters);
       var output = await htmlRenderer.RenderComponentAsync<T>(parameters);
       return output.ToHtmlString();
     });
@@ -110,7 +111,7 @@ public sealed class ReportService(
       baseStyles = reportRegistry.BaseStyles;
     }
 
-    var childComponentParameters = new Dictionary<string, object?>();
+    Dictionary<string, object?> childComponentParameters = [];
     if (
       blazorReport.Component.BaseType == typeof(BlazorReportsBase)
       && reportRegistry.GlobalAssets.Count != 0
@@ -129,7 +130,7 @@ public sealed class ReportService(
       childComponentParameters.Add("Data", data);
     }
 
-    var baseComponentParameters = new Dictionary<string, object?>();
+    Dictionary<string, object?> baseComponentParameters = [];
     if (!string.IsNullOrEmpty(baseStyles))
     {
       baseComponentParameters.Add("BaseStyles", baseStyles);
@@ -138,13 +139,13 @@ public sealed class ReportService(
     baseComponentParameters.Add("ChildComponentType", blazorReport.Component);
     baseComponentParameters.Add("ChildComponentParameters", childComponentParameters);
 
-    await using var htmlRenderer = new HtmlRenderer(scope.ServiceProvider, loggerFactory);
+    await using HtmlRenderer htmlRenderer = new(scope.ServiceProvider, loggerFactory);
 
     if (blazorReport.OutputFormat == ReportOutputFormat.Pdf)
     {
       var html = await htmlRenderer.Dispatcher.InvokeAsync(async () =>
       {
-        var parameters = ParameterView.FromDictionary(baseComponentParameters);
+        ParameterView parameters = ParameterView.FromDictionary(baseComponentParameters);
         var output = await htmlRenderer.RenderComponentAsync<BlazorReportsTemplate>(parameters);
         return output.ToHtmlString();
       });
@@ -157,7 +158,7 @@ public sealed class ReportService(
     {
       var html = await htmlRenderer.Dispatcher.InvokeAsync(async () =>
       {
-        var parameters = ParameterView.FromDictionary(baseComponentParameters);
+        ParameterView parameters = ParameterView.FromDictionary(baseComponentParameters);
         var output = await htmlRenderer.RenderComponentAsync<BlazorReportsTemplate>(parameters);
         return output.ToHtmlString();
       });

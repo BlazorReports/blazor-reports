@@ -1,0 +1,50 @@
+@* This component will render a repeating header on each page when printed *@
+
+@* This component will render a repeating header on each page when printed *@
+
+<div class="print-container">
+  <div class="print-header">
+    <h1>Header for Each Page</h1>
+  </div>
+
+  <div class="print-content">
+    @for (int i = 0; i < 100; i++)
+    {
+    <p>This is line number @i</p>
+    }
+  </div>
+</div>
+
+<style>
+  /* General styling for print */
+
+  @@media print {
+    .print-container {
+      break-inside: avoid;
+    }
+
+    .print-content {
+      break-before: page;
+    }
+
+    margin-top: 0;
+  }
+
+  /* General styling for screen display */
+  .print-container {
+    margin: 20px;
+  }
+
+  .print-header {
+    background-color: lightgray;
+    padding: 10px;
+  }
+
+  .print-content {
+    margin-top: 20px;
+  }
+</style>
+
+@code {
+
+}

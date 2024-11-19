@@ -22,7 +22,7 @@ internal sealed class BrowserMessage(string method)
   /// The parameters that we want to feed into the browser
   /// </summary>
   [JsonPropertyName("params")]
-  public Dictionary<string, object> Parameters { get; } = new();
+  public Dictionary<string, object> Parameters { get; } = [];
 }
 
 /// <summary>
