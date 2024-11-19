@@ -159,6 +159,8 @@ internal sealed class BrowserService : IAsyncDisposable, IBrowserService
     _browserPoolLock.Dispose();
     _browserStartLock.Dispose();
     while (_browserQueue.TryDequeue(out var browser))
+    {
       await browser.DisposeAsync();
+    }
   }
 }

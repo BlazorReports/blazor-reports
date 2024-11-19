@@ -19,7 +19,7 @@ internal static class EdgeFinder
   private const string ChromeExecutableNameMac = "Microsoft Edge.app/Contents/MacOS/Microsoft Edge";
 
   private static readonly string[] LinuxDirectoryLocations =
-  {
+  [
     "/usr/local/sbin",
     "/usr/local/bin",
     "/usr/sbin",
@@ -27,7 +27,7 @@ internal static class EdgeFinder
     "/sbin",
     "/bin",
     "/opt/microsoft/edge",
-  };
+  ];
 
   /// <summary>
   /// Tries to find Chrome
@@ -50,7 +50,7 @@ internal static class EdgeFinder
       return pathFromCurrentDirectory;
     }
 
-    var directories = new List<string>();
+    List<string> directories = [];
     GetApplicationDirectories(directories);
 
     foreach (var exeName in exeNames)
@@ -99,7 +99,10 @@ internal static class EdgeFinder
   private static string? GetPathFromRegistry()
   {
     if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+    {
       return null;
+    }
+
     var key = Registry
       .GetValue(
         @"HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\App Paths\msedge.exe",
@@ -108,15 +111,18 @@ internal static class EdgeFinder
       )
       ?.ToString();
 
-    if (key == null)
+    if (key is null)
+    {
       return null;
+    }
+
     var path = Path.Combine(key, EdgeExecutableNameWin);
     return File.Exists(path) ? path : null;
   }
 
   private static List<string> GetExeNames()
   {
-    var exeNames = new List<string>();
+    List<string> exeNames = [];
 
     if (IsWindows)
     {
@@ -125,12 +131,12 @@ internal static class EdgeFinder
     else if (IsLinux)
     {
       exeNames.AddRange(
-        new[] { ChromeExecutableNameLinux1, ChromeExecutableNameLinux2, ChromeExecutableNameLinux3 }
+        [ChromeExecutableNameLinux1, ChromeExecutableNameLinux2, ChromeExecutableNameLinux3]
       );
     }
     else if (IsMacOs)
     {
-      exeNames.AddRange(new[] { ChromeExecutableNameMac });
+      exeNames.AddRange([ChromeExecutableNameMac]);
     }
 
     return exeNames;

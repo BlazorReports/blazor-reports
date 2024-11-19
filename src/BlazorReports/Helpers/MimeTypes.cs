@@ -5,18 +5,17 @@
 /// </summary>
 internal static class MimeTypes
 {
-  private static readonly Dictionary<string, string> MimeTypesDictionary =
-    new()
-    {
-      { ".txt", "text/plain" },
-      { ".pdf", "application/pdf" },
-      { ".csv", "text/csv" },
-      { ".png", "image/png" },
-      { ".jpg", "image/jpeg" },
-      { ".jpeg", "image/jpeg" },
-      { ".gif", "image/gif" },
-      { ".webp", "image/webp" },
-    };
+  private static readonly Dictionary<string, string> MimeTypesDictionary = new()
+  {
+    { ".txt", "text/plain" },
+    { ".pdf", "application/pdf" },
+    { ".csv", "text/csv" },
+    { ".png", "image/png" },
+    { ".jpg", "image/jpeg" },
+    { ".jpeg", "image/jpeg" },
+    { ".gif", "image/gif" },
+    { ".webp", "image/webp" },
+  };
 
   private const string UnknownMimeType = "application/octet-stream";
 
@@ -30,16 +29,8 @@ internal static class MimeTypes
   {
     var extension = Path.GetExtension(fileName).ToLowerInvariant();
 
-    if (string.IsNullOrEmpty(extension))
-    {
-      return UnknownMimeType;
-    }
-
-    if (!MimeTypesDictionary.TryGetValue(extension, out var mimeType))
-    {
-      return UnknownMimeType;
-    }
-
-    return mimeType;
+    return string.IsNullOrEmpty(extension)
+      ? UnknownMimeType
+      : MimeTypesDictionary.GetValueOrDefault(extension, UnknownMimeType);
   }
 }

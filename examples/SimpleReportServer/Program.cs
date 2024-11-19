@@ -1,12 +1,16 @@
 using BlazorReports.Extensions;
 using BlazorReports.Models;
+using ExampleTemplates.Reports;
 using SimpleReportServer;
 
 var builder = WebApplication.CreateSlimBuilder(args);
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddBlazorReports();
+builder.Services.AddBlazorReports(opts =>
+{
+  opts.BrowserOptions.ResponseTimeout = TimeSpan.FromSeconds(90);
+});
 
 var app = builder.Build();
 
@@ -16,12 +20,17 @@ if (app.Environment.IsDevelopment())
   app.UseSwaggerUI();
 }
 
-app.MapGroup("reports").MapBlazorReport<HelloReport, HelloReportData>();
-app.MapGroup("reports")
-  .MapBlazorReport<HelloReport, HelloReportData>(opts =>
-  {
-    opts.ReportName = "HelloReportHtml";
-    opts.OutputFormat = ReportOutputFormat.Html;
-  });
+var reportsGroup = app.MapGroup("reports");
+
+reportsGroup.MapBlazorReport<HelloReport, HelloReportData>();
+reportsGroup.MapBlazorReport<HelloReport, HelloReportData>(opts =>
+{
+  opts.ReportName = "HelloReportHtml";
+  opts.OutputFormat = ReportOutputFormat.Html;
+});
+reportsGroup.MapBlazorReport<ReportWithRepeatingHeaderPerPage>(opts =>
+{
+  opts.OutputFormat = ReportOutputFormat.Pdf;
+});
 
 app.Run();

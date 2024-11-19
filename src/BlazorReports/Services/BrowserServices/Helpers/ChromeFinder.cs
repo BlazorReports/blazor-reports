@@ -20,7 +20,7 @@ internal static class ChromeFinder
   private const string ChromeExecutableNameMac1 = "Google Chrome.app/Contents/MacOS/Google Chrome";
   private const string ChromeExecutableNameMac2 = "Chromium.app/Contents/MacOS/Chromium";
   private static readonly string[] LinuxDirectoryLocations =
-  {
+  [
     "/usr/local/sbin",
     "/usr/local/bin",
     "/usr/sbin",
@@ -28,7 +28,7 @@ internal static class ChromeFinder
     "/sbin",
     "/bin",
     "/opt/microsoft/edge",
-  };
+  ];
 
   /// <summary>
   /// Tries to find Chrome
@@ -51,7 +51,7 @@ internal static class ChromeFinder
       return pathFromCurrentDirectory;
     }
 
-    var directories = new List<string>();
+    List<string> directories = [];
     GetApplicationDirectories(directories);
 
     foreach (var exeName in exeNames)
@@ -100,7 +100,10 @@ internal static class ChromeFinder
   private static string? GetPathFromRegistry()
   {
     if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+    {
       return null;
+    }
+
     var key = Registry
       .GetValue(
         @"HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\App Paths\chrome.exe",
@@ -109,15 +112,18 @@ internal static class ChromeFinder
       )
       ?.ToString();
 
-    if (key == null)
+    if (key is null)
+    {
       return null;
+    }
+
     var path = Path.Combine(key, ChromeExecutableNameWin);
     return File.Exists(path) ? path : null;
   }
 
   private static List<string> GetExeNames()
   {
-    var exeNames = new List<string>();
+    List<string> exeNames = [];
 
     if (IsWindows)
     {
@@ -126,18 +132,17 @@ internal static class ChromeFinder
     else if (IsLinux)
     {
       exeNames.AddRange(
-        new[]
-        {
+        [
           ChromeExecutableNameLinux1,
           ChromeExecutableNameLinux2,
           ChromeExecutableNameLinux3,
           ChromeExecutableNameLinux4,
-        }
+        ]
       );
     }
     else if (IsMacOs)
     {
-      exeNames.AddRange(new[] { ChromeExecutableNameMac1, ChromeExecutableNameMac2 });
+      exeNames.AddRange([ChromeExecutableNameMac1, ChromeExecutableNameMac2]);
     }
 
     return exeNames;

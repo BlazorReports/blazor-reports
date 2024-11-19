@@ -30,8 +30,9 @@ internal sealed class BrowserPage(
   /// The id of the page in the browser
   /// </summary>
   internal readonly string TargetId = targetId;
-  private readonly CustomFromBase64Transform _transform =
-    new(FromBase64TransformMode.IgnoreWhiteSpaces);
+  private readonly CustomFromBase64Transform _transform = new(
+    FromBase64TransformMode.IgnoreWhiteSpaces
+  );
 
   /// <summary>
   /// Displays the HTML in the browser
@@ -43,14 +44,16 @@ internal sealed class BrowserPage(
   {
     await connection.ConnectAsync(stoppingToken);
     if (string.IsNullOrWhiteSpace(html))
+    {
       throw new ArgumentException("Value cannot be null or whitespace.", nameof(html));
+    }
 
     // Enables or disables the cache
-    var cacheMessage = new BrowserMessage("Network.setCacheDisabled");
+    BrowserMessage cacheMessage = new("Network.setCacheDisabled");
     cacheMessage.Parameters.Add("cacheDisabled", false);
     connection.SendAsync(cacheMessage);
 
-    var getPageFrameTreeMessage = new BrowserMessage("Page.getFrameTree");
+    BrowserMessage getPageFrameTreeMessage = new("Page.getFrameTree");
     await connection.SendAsync(
       getPageFrameTreeMessage,
       PageGetFrameTreeResponseSerializationContext
@@ -58,7 +61,7 @@ internal sealed class BrowserPage(
         .BrowserResultResponsePageGetFrameTreeResponse,
       response =>
       {
-        var pageSetDocumentContentMessage = new BrowserMessage("Page.setDocumentContent");
+        BrowserMessage pageSetDocumentContentMessage = new("Page.setDocumentContent");
         pageSetDocumentContentMessage.Parameters.Add("frameId", response.Result.FrameTree.Frame.Id);
         pageSetDocumentContentMessage.Parameters.Add("html", html);
         connection.SendAsync(pageSetDocumentContentMessage);
@@ -84,9 +87,11 @@ internal sealed class BrowserPage(
       async pagePrintToPdfResponse =>
       {
         if (string.IsNullOrEmpty(pagePrintToPdfResponse.Result.Stream))
+        {
           return;
+        }
 
-        var ioReadMessage = new BrowserMessage("IO.read");
+        BrowserMessage ioReadMessage = new("IO.read");
         ioReadMessage.Parameters.Add("handle", pagePrintToPdfResponse.Result.Stream);
         ioReadMessage.Parameters.Add("size", 50 * 1024);
 
@@ -94,7 +99,10 @@ internal sealed class BrowserPage(
         while (true)
         {
           if (finished)
+          {
             break;
+          }
+
           await connection.SendAsync(
             ioReadMessage,
             IoReadResponseSerializationContext.Default.BrowserResultResponseIoReadResponse,
@@ -128,7 +136,7 @@ internal sealed class BrowserPage(
     BlazorReportsPageSettings pageSettings
   )
   {
-    var message = new BrowserMessage("Page.printToPDF");
+    BrowserMessage message = new("Page.printToPDF");
     message.Parameters.Add(
       "landscape",
       pageSettings.Orientation == BlazorReportsPageOrientation.Landscape
@@ -140,6 +148,45 @@ internal sealed class BrowserPage(
     message.Parameters.Add("marginLeft", pageSettings.MarginLeft);
     message.Parameters.Add("marginRight", pageSettings.MarginRight);
     message.Parameters.Add("printBackground", !pageSettings.IgnoreBackground);
+    message.Parameters.Add("displayHeaderFooter", true);
+    message.Parameters.Add(
+      "headerTemplate",
+      """
+      <style>
+        div:has(span.pageNumber:contains('1') {
+            background-color: lightcoral;
+            color: darkred;
+            padding: 10px;
+            border: 2px solid red;
+            font-size: 20px;
+        }
+      </style>
+
+      <div style="font-size: 12px; width: 100%; text-align: center;" class="print-header">
+
+      <span class="pageNumber"></span>
+
+      </div>
+      """
+    //       """
+    //       <div style="font-size: 12px; width: 100%; text-align: center;" class="print-header">
+    //         <script>
+    //           const pageNumberElement = document.querySelector('.pageNumber');
+    //           if (pageNumberElement) {
+    //             const pageNumber = parseInt(pageNumberElement.textContent, 10); // Parse the text content to an integer
+    //
+    //             // Check if the page number is odd
+    //             if (pageNumber % 2 !== 0) {
+    //               document.querySelector('.print-header').style.display = 'block'; // Show for odd page numbers
+    //             } else {
+    //               document.querySelector('.print-header').style.display = 'none';  // Hide for even page numbers
+    //             }
+    //           }
+    //         </script>
+    //         <span class="pageNumber"></span>
+    //       </div>
+    //       """
+    );
     message.Parameters.Add("transferMode", "ReturnAsStream");
 
     return message;
@@ -152,7 +199,10 @@ internal sealed class BrowserPage(
   )
   {
     if (data.Length == 0)
+    {
       return;
+    }
+
     var sharedPool = ArrayPool<byte>.Shared;
     var dataBytes = sharedPool.Rent(data.Length);
     var inputBlock = sharedPool.Rent(CustomFromBase64Transform.InputBlockSize);
@@ -181,7 +231,10 @@ internal sealed class BrowserPage(
         writer.Advance(count);
         var flushResult = await writer.FlushAsync(stoppingToken);
         if (flushResult.IsCanceled || flushResult.IsCompleted)
+        {
           break;
+        }
+
         writerBuffer = writer.GetMemory(count); // Get a new buffer after advancing
       }
     }
@@ -196,7 +249,7 @@ internal sealed class BrowserPage(
   private async ValueTask ClosePdfStream(string stream, CancellationToken stoppingToken = default)
   {
     await connection.ConnectAsync(stoppingToken);
-    var ioCloseMessage = new BrowserMessage("IO.close");
+    BrowserMessage ioCloseMessage = new("IO.close");
     ioCloseMessage.Parameters.Add("handle", stream);
     connection.SendAsync(ioCloseMessage);
   }

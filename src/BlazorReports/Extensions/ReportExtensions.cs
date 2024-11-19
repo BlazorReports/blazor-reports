@@ -193,7 +193,7 @@ public static class ReportExtensions
     Action<BlazorReportRegistrationOptions>? setupAction = null
   )
   {
-    var options = new BlazorReportRegistrationOptions();
+    BlazorReportRegistrationOptions options = new();
     var globalOptions = serviceScope
       .ServiceProvider.GetRequiredService<IOptionsSnapshot<BlazorReportsOptions>>()
       .Value;

@@ -15,7 +15,14 @@ namespace BlazorReports.Services.BrowserServices;
 /// <summary>
 /// Represents a connection to the browser
 /// </summary>
-internal sealed class Connection : IAsyncDisposable
+/// <remarks>
+/// The constructor of the connection
+/// </remarks>
+/// <param name="uri"> The uri of the connection</param>
+/// <param name="responseTimeout"> The response timeout</param>
+/// <param name="logger"> The logger</param>
+internal sealed class Connection(Uri uri, TimeSpan responseTimeout, ILogger<Connection> logger)
+  : IAsyncDisposable
 {
   private ClientWebSocket _webSocket = new();
   private readonly ArrayPool<byte> _bufferPool = ArrayPool<byte>.Shared;
@@ -29,26 +36,11 @@ internal sealed class Connection : IAsyncDisposable
   private Task? _receiveTask;
   private readonly SemaphoreSlim _connectionLock = new(1, 1);
   private readonly CancellationTokenSource _cts = new();
-  private readonly TimeSpan _responseTimeout;
-  private readonly ILogger<Connection> _logger;
 
   /// <summary>
   /// The uri of the connection
   /// </summary>
-  public readonly Uri Uri;
-
-  /// <summary>
-  /// The constructor of the connection
-  /// </summary>
-  /// <param name="uri"> The uri of the connection</param>
-  /// <param name="responseTimeout"> The response timeout</param>
-  /// <param name="logger"> The logger</param>
-  public Connection(Uri uri, TimeSpan responseTimeout, ILogger<Connection> logger)
-  {
-    Uri = uri;
-    _responseTimeout = responseTimeout;
-    _logger = logger;
-  }
+  public readonly Uri Uri = uri;
 
   public async Task InitializeAsync(CancellationToken stoppingToken = default)
   {
@@ -56,7 +48,9 @@ internal sealed class Connection : IAsyncDisposable
     try
     {
       if (_webSocket.State is not WebSocketState.None)
+      {
         return;
+      }
 
       await _webSocket.ConnectAsync(Uri, stoppingToken);
 
@@ -80,7 +74,9 @@ internal sealed class Connection : IAsyncDisposable
   )
   {
     if (_webSocket.State is WebSocketState.Open)
+    {
       return new Success();
+    }
 
     await _connectionLock.WaitAsync(stoppingToken);
 
@@ -102,13 +98,15 @@ internal sealed class Connection : IAsyncDisposable
           retries--; // decrease remaining retries
 
           if (retries > 0) // don't delay if no more retries left
+          {
             await Task.Delay(TimeSpan.FromSeconds(3), stoppingToken); // wait for 3 seconds before next attempt
+          }
         }
       }
 
       if (_webSocket.State is not WebSocketState.Open)
       {
-        LogMessages.UnableToEstablishWebSocketConnection(_logger, Uri);
+        LogMessages.UnableToEstablishWebSocketConnection(logger, Uri);
         return new ConnectionProblem();
       }
 
@@ -130,14 +128,16 @@ internal sealed class Connection : IAsyncDisposable
         await _sendSignal.WaitAsync(_cts.Token);
 
         if (!_sendQueue.TryDequeue(out var message))
+        {
           continue;
+        }
 
         var buffer = JsonSerializer.SerializeToUtf8Bytes(
           message,
           BrowserMessageSerializationContext.Default.BrowserMessage
         );
         bufferToSend = _bufferPool.Rent(buffer.Length);
-        var bufferToSendMemory = new Memory<byte>(bufferToSend);
+        Memory<byte> bufferToSendMemory = new(bufferToSend);
         buffer.CopyTo(bufferToSendMemory);
         await _webSocket.SendAsync(
           bufferToSendMemory[..buffer.Length],
@@ -149,19 +149,21 @@ internal sealed class Connection : IAsyncDisposable
     }
     catch (OperationCanceledException)
     {
-      LogMessages.SendQueueProcessingCancelled(_logger, Uri);
+      LogMessages.SendQueueProcessingCancelled(logger, Uri);
     }
     finally
     {
       if (bufferToSend is not null)
+      {
         _bufferPool.Return(bufferToSend);
+      }
     }
   }
 
   private async Task ProcessResponsesAsync()
   {
     var bufferToReceive = _bufferPool.Rent(BufferSize);
-    var bufferToReceiveMemory = new Memory<byte>(bufferToReceive);
+    Memory<byte> bufferToReceiveMemory = new(bufferToReceive);
 
     try
     {
@@ -170,10 +172,12 @@ internal sealed class Connection : IAsyncDisposable
         var result = await _webSocket.ReceiveAsync(bufferToReceiveMemory, _cts.Token);
 
         var messageReceived = bufferToReceiveMemory[..result.Count];
-        var jsonDoc = JsonDocument.Parse(messageReceived);
+        JsonDocument jsonDoc = JsonDocument.Parse(messageReceived);
         var root = jsonDoc.RootElement;
         if (!root.TryGetProperty("id", out var methodElement))
+        {
           continue;
+        }
 
         var id = methodElement.GetInt32();
 
@@ -185,7 +189,7 @@ internal sealed class Connection : IAsyncDisposable
     }
     catch (OperationCanceledException)
     {
-      LogMessages.ReceiveQueueProcessingCancelled(_logger, Uri);
+      LogMessages.ReceiveQueueProcessingCancelled(logger, Uri);
     }
     catch (WebSocketException)
     {
@@ -193,7 +197,7 @@ internal sealed class Connection : IAsyncDisposable
     }
     catch (Exception ex)
     {
-      LogMessages.ReceiveQueueProcessingError(_logger, ex, Uri);
+      LogMessages.ReceiveQueueProcessingError(logger, ex, Uri);
     }
     finally
     {
@@ -210,11 +214,13 @@ internal sealed class Connection : IAsyncDisposable
     _sendQueue.Enqueue(message);
     _sendSignal.Release();
 
-    var tcs = new TaskCompletionSource<JsonDocument>();
+    TaskCompletionSource<JsonDocument> tcs = new();
     _responseTasks[message.Id] = tcs;
 
-    using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
-    timeoutCts.CancelAfter(_responseTimeout);
+    using CancellationTokenSource timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(
+      stoppingToken
+    );
+    timeoutCts.CancelAfter(responseTimeout);
 
     if (await Task.WhenAny(tcs.Task, Task.Delay(-1, timeoutCts.Token)) == tcs.Task)
     {
@@ -236,10 +242,9 @@ internal sealed class Connection : IAsyncDisposable
     var response = await SendMessageAsync(message, stoppingToken);
     var parsedMessage = response.RootElement.Deserialize(returnDataJsonTypeInfo);
 
-    if (parsedMessage is null)
-      throw new JsonException("Could not deserialize response");
-
-    return parsedMessage;
+    return parsedMessage is null
+      ? throw new JsonException("Could not deserialize response")
+      : parsedMessage;
   }
 
   /// <summary>
@@ -259,10 +264,9 @@ internal sealed class Connection : IAsyncDisposable
     var response = await SendMessageAsync(message, stoppingToken);
     var parsedMessage = response.RootElement.Deserialize(returnDataJsonTypeInfo);
 
-    if (parsedMessage is null)
-      throw new JsonException("Could not deserialize response");
-
-    return await responseHandler(parsedMessage);
+    return parsedMessage is null
+      ? throw new JsonException("Could not deserialize response")
+      : await responseHandler(parsedMessage);
   }
 
   /// <summary>
@@ -280,11 +284,9 @@ internal sealed class Connection : IAsyncDisposable
   )
   {
     var response = await SendMessageAsync(message, stoppingToken);
-    var parsedMessage = response.RootElement.Deserialize(returnDataJsonTypeInfo);
-
-    if (parsedMessage is null)
-      throw new JsonException("Could not deserialize response");
-
+    var parsedMessage =
+      response.RootElement.Deserialize(returnDataJsonTypeInfo)
+      ?? throw new JsonException("Could not deserialize response");
     responseAction(parsedMessage);
   }
 
@@ -306,17 +308,15 @@ internal sealed class Connection : IAsyncDisposable
     _sendQueue.Enqueue(message);
     _sendSignal.Release();
 
-    var tcs = new TaskCompletionSource<JsonDocument>();
+    TaskCompletionSource<JsonDocument> tcs = new();
     _responseTasks[message.Id] = tcs;
 
-    if (await Task.WhenAny(tcs.Task, Task.Delay(_responseTimeout, stoppingToken)) == tcs.Task)
+    if (await Task.WhenAny(tcs.Task, Task.Delay(responseTimeout, stoppingToken)) == tcs.Task)
     {
       var response = await tcs.Task;
-      var parsedMessage = response.RootElement.Deserialize(returnDataJsonTypeInfo);
-
-      if (parsedMessage is null)
-        throw new JsonException("Could not deserialize response");
-
+      var parsedMessage =
+        response.RootElement.Deserialize(returnDataJsonTypeInfo)
+        ?? throw new JsonException("Could not deserialize response");
       await responseAction(parsedMessage);
     }
     else
@@ -340,9 +340,14 @@ internal sealed class Connection : IAsyncDisposable
     await _cts.CancelAsync();
 
     if (_sendTask is not null)
+    {
       await _sendTask;
+    }
+
     if (_receiveTask is not null)
+    {
       await _receiveTask;
+    }
 
     _webSocket.Dispose();
     _sendSignal.Dispose();

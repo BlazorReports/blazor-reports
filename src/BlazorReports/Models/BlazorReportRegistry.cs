@@ -22,7 +22,7 @@ public class BlazorReportRegistry
     if (!string.IsNullOrWhiteSpace(options.Value.AssetsPath))
     {
       var assetsPath = options.Value.AssetsPath;
-      var assetsDirectory = new DirectoryInfo(assetsPath);
+      DirectoryInfo assetsDirectory = new(assetsPath);
       if (assetsDirectory.Exists)
       {
         foreach (var file in assetsDirectory.GetFiles())
@@ -51,12 +51,12 @@ public class BlazorReportRegistry
   /// <summary>
   /// The global assets for the BlazorReportRegistry.
   /// </summary>
-  public Dictionary<string, string> GlobalAssets { get; set; } = new();
+  public Dictionary<string, string> GlobalAssets { get; set; } = [];
 
   /// <summary>
   /// The BlazorReport objects for the BlazorReportRegistry.
   /// </summary>
-  public Dictionary<string, BlazorReport> Reports { get; } = new();
+  public Dictionary<string, BlazorReport> Reports { get; } = [];
 
   /// <summary>
   /// Adds a report to the BlazorReportRegistry.
@@ -71,10 +71,13 @@ public class BlazorReportRegistry
     var normalizedReportName = reportNameToUse.ToLowerInvariant().Trim();
 
     if (Reports.ContainsKey(normalizedReportName))
+    {
       throw new InvalidOperationException(
         $"Report with name {normalizedReportName} already exists"
       );
-    var blazorReport = new BlazorReport
+    }
+
+    BlazorReport blazorReport = new()
     {
       OutputFormat = options?.OutputFormat ?? ReportOutputFormat.Pdf,
       Name = reportNameToUse,
@@ -90,7 +93,7 @@ public class BlazorReportRegistry
     if (!string.IsNullOrEmpty(options?.AssetsPath))
     {
       var assetsPath = options.AssetsPath;
-      var assetsDirectory = new DirectoryInfo(assetsPath);
+      DirectoryInfo assetsDirectory = new(assetsPath);
       if (assetsDirectory.Exists)
       {
         foreach (var file in assetsDirectory.GetFiles())
@@ -120,10 +123,13 @@ public class BlazorReportRegistry
     var normalizedReportName = reportNameToUse.ToLowerInvariant().Trim();
 
     if (Reports.ContainsKey(normalizedReportName))
+    {
       throw new InvalidOperationException(
         $"Report with name {normalizedReportName} already exists"
       );
-    var blazorReport = new BlazorReport
+    }
+
+    BlazorReport blazorReport = new()
     {
       OutputFormat = options?.OutputFormat ?? ReportOutputFormat.Pdf,
       Name = reportNameToUse,
@@ -139,7 +145,7 @@ public class BlazorReportRegistry
     if (!string.IsNullOrEmpty(options?.AssetsPath))
     {
       var assetsPath = options.AssetsPath;
-      var assetsDirectory = new DirectoryInfo(assetsPath);
+      DirectoryInfo assetsDirectory = new(assetsPath);
       if (assetsDirectory.Exists)
       {
         foreach (var file in assetsDirectory.GetFiles())
