@@ -5,18 +5,17 @@
 /// </summary>
 internal static class MimeTypes
 {
-  private static readonly Dictionary<string, string> MimeTypesDictionary =
-    new()
-    {
-      { ".txt", "text/plain" },
-      { ".pdf", "application/pdf" },
-      { ".csv", "text/csv" },
-      { ".png", "image/png" },
-      { ".jpg", "image/jpeg" },
-      { ".jpeg", "image/jpeg" },
-      { ".gif", "image/gif" },
-      { ".webp", "image/webp" },
-    };
+  private static readonly Dictionary<string, string> MimeTypesDictionary = new()
+  {
+    { ".txt", "text/plain" },
+    { ".pdf", "application/pdf" },
+    { ".csv", "text/csv" },
+    { ".png", "image/png" },
+    { ".jpg", "image/jpeg" },
+    { ".jpeg", "image/jpeg" },
+    { ".gif", "image/gif" },
+    { ".webp", "image/webp" },
+  };
 
   private const string UnknownMimeType = "application/octet-stream";
 

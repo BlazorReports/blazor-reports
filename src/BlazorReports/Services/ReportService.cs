@@ -55,13 +55,12 @@ public sealed class ReportService(
       baseStyles = reportRegistry.BaseStyles;
     }
 
-    Dictionary<string, object?> componentParameters =
-      new()
-      {
-        { "BaseStyles", baseStyles },
-        { "Data", data },
-        { "GlobalAssets", reportRegistry.GlobalAssets },
-      };
+    Dictionary<string, object?> componentParameters = new()
+    {
+      { "BaseStyles", baseStyles },
+      { "Data", data },
+      { "GlobalAssets", reportRegistry.GlobalAssets },
+    };
 
     await using HtmlRenderer htmlRenderer = new(scope.ServiceProvider, loggerFactory);
     var html = await htmlRenderer.Dispatcher.InvokeAsync(async () =>

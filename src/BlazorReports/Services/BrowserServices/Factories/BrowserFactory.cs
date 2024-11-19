@@ -146,13 +146,12 @@ internal sealed class BrowserFactory(
     var chromiumArguments = string.Join(" ", defaultChromiumArgument);
     LogMessages.StartingChromiumProcess(browserFactoryLogger, chromiumArguments);
 
-    ProcessStartInfo processStartInfo =
-      new()
-      {
-        FileName = chromiumExeFileName,
-        Arguments = chromiumArguments,
-        CreateNoWindow = true,
-      };
+    ProcessStartInfo processStartInfo = new()
+    {
+      FileName = chromiumExeFileName,
+      Arguments = chromiumArguments,
+      CreateNoWindow = true,
+    };
 
     chromiumProcess.StartInfo = processStartInfo;
     chromiumProcess.Exited += ChromiumProcess_Exited;
@@ -191,13 +190,12 @@ internal sealed class BrowserFactory(
       throw new DirectoryNotFoundException($"The {nameof(devToolsActivePortDirectory)} is null");
     }
 
-    FileSystemWatcher watcher =
-      new()
-      {
-        Path = devToolsActivePortDirectory.FullName,
-        Filter = Path.GetFileName(devToolsActivePortFile),
-        EnableRaisingEvents = true,
-      };
+    FileSystemWatcher watcher = new()
+    {
+      Path = devToolsActivePortDirectory.FullName,
+      Filter = Path.GetFileName(devToolsActivePortFile),
+      EnableRaisingEvents = true,
+    };
 
     CancellationTokenSource cts = new(TimeSpan.FromSeconds(10)); // 10 second timeout
     TaskCompletionSource<string[]> tcs = new();

@@ -77,16 +77,15 @@ public class BlazorReportRegistry
       );
     }
 
-    BlazorReport blazorReport =
-      new()
-      {
-        OutputFormat = options?.OutputFormat ?? ReportOutputFormat.Pdf,
-        Name = reportNameToUse,
-        NormalizedName = normalizedReportName,
-        Component = typeof(T),
-        Data = null,
-        PageSettings = options?.PageSettings,
-      };
+    BlazorReport blazorReport = new()
+    {
+      OutputFormat = options?.OutputFormat ?? ReportOutputFormat.Pdf,
+      Name = reportNameToUse,
+      NormalizedName = normalizedReportName,
+      Component = typeof(T),
+      Data = null,
+      PageSettings = options?.PageSettings,
+    };
     if (!string.IsNullOrEmpty(options?.BaseStylesPath))
     {
       blazorReport.BaseStyles = File.ReadAllText(options.BaseStylesPath);
@@ -130,16 +129,15 @@ public class BlazorReportRegistry
       );
     }
 
-    BlazorReport blazorReport =
-      new()
-      {
-        OutputFormat = options?.OutputFormat ?? ReportOutputFormat.Pdf,
-        Name = reportNameToUse,
-        NormalizedName = normalizedReportName,
-        Component = typeof(T),
-        Data = typeof(TD),
-        PageSettings = options?.PageSettings,
-      };
+    BlazorReport blazorReport = new()
+    {
+      OutputFormat = options?.OutputFormat ?? ReportOutputFormat.Pdf,
+      Name = reportNameToUse,
+      NormalizedName = normalizedReportName,
+      Component = typeof(T),
+      Data = typeof(TD),
+      PageSettings = options?.PageSettings,
+    };
     if (!string.IsNullOrEmpty(options?.BaseStylesPath))
     {
       blazorReport.BaseStyles = File.ReadAllText(options.BaseStylesPath);

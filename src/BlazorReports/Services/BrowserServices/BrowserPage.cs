@@ -30,8 +30,9 @@ internal sealed class BrowserPage(
   /// The id of the page in the browser
   /// </summary>
   internal readonly string TargetId = targetId;
-  private readonly CustomFromBase64Transform _transform =
-    new(FromBase64TransformMode.IgnoreWhiteSpaces);
+  private readonly CustomFromBase64Transform _transform = new(
+    FromBase64TransformMode.IgnoreWhiteSpaces
+  );
 
   /// <summary>
   /// Displays the HTML in the browser
