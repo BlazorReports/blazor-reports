@@ -19,15 +19,19 @@ if (app.Environment.IsDevelopment())
   app.UseSwagger();
   app.UseSwaggerUI();
 }
-
 var reportsGroup = app.MapGroup("reports");
 
+// Report With Data
 reportsGroup.MapBlazorReport<HelloReport, HelloReportData>();
+
+// Report that returns Html
 reportsGroup.MapBlazorReport<HelloReport, HelloReportData>(opts =>
 {
   opts.ReportName = "HelloReportHtml";
   opts.OutputFormat = ReportOutputFormat.Html;
 });
+
+// Report that repeats the header per each page
 reportsGroup.MapBlazorReport<ReportWithRepeatingHeaderPerPage>(opts =>
 {
   opts.OutputFormat = ReportOutputFormat.Pdf;

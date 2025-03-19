@@ -1,0 +1,6 @@
+@ReportServerWithTailwind_HostAddress = http://localhost:5007
+
+GET {{ReportServerWithTailwind_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

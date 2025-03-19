@@ -1,3 +1,6 @@
+# javascript
+node_modules/
+
 # User-specific files
 *.suo
 *.user

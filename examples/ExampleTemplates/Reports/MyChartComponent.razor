@@ -1,0 +1,79 @@
+@using System.Text
+@using System.Text.Json
+@using System.Text.RegularExpressions
+@using ExampleTemplates.Dtos
+
+@if (ReportAssets.TryGetValue("echarts.js", out var base64Script) && !string.IsNullOrEmpty(base64Script))
+{
+  <script>
+        @((MarkupString)DecodeBase64Script(base64Script))
+    </script>
+}
+
+<div id="@ChartId" class="chart-container" style="width: 600px; height: 400px;"></div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    var chartDom = document.getElementById("@ChartId");
+    var myChart = echarts.init(chartDom);
+
+    var option = {
+      title: {
+        text: "Sample ECharts Bar Chart",
+      },
+      tooltip: {},
+      xAxis: {
+        type: "category",
+        data: @GetCategoryData()
+      },
+      yAxis: {
+        type: "value",
+      },
+      series: [
+        {
+          name: "Value",
+          type: "bar",
+          data: @GetValueData()
+        },
+      ],
+    };
+
+    myChart.setOption(option);
+  });
+</script>
+
+@code {
+  [Parameter]
+  public List<ChartDataItem>? Data { get; set; }
+
+  [Parameter]
+  public Dictionary<string, string> ReportAssets { get; set; } = new();
+
+  private string ChartId = $"echart-{Guid.NewGuid()}";
+
+  private MarkupString GetCategoryData()
+  {
+    return (MarkupString)JsonSerializer.Serialize(Data?.Select(d => d.Label) ?? new List<string>());
+  }
+
+  private MarkupString GetValueData()
+  {
+    return (MarkupString)JsonSerializer.Serialize(Data?.Select(d => d.Value) ?? new List<int>());
+  }
+
+  private string DecodeBase64Script(string base64)
+  {
+    try
+    {
+      var match = Regex.Match(base64, @"data:.*?;base64,(.+)");
+      string pureBase64 = match.Success ? match.Groups[1].Value : base64;
+
+      var bytes = Convert.FromBase64String(pureBase64);
+      return Encoding.UTF8.GetString(bytes);
+    }
+    catch
+    {
+      return "// Failed to decode script";
+    }
+  }
+}

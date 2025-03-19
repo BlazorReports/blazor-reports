@@ -15,6 +15,7 @@ internal static class MimeTypes
     { ".jpeg", "image/jpeg" },
     { ".gif", "image/gif" },
     { ".webp", "image/webp" },
+    { ".js", "application/javascript" },
   };
 
   private const string UnknownMimeType = "application/octet-stream";

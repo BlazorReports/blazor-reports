@@ -18,6 +18,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SimpleReportServer", "examp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExampleTemplates", "examples\ExampleTemplates\ExampleTemplates.csproj", "{B0C3AFB8-AA52-4947-863F-9DEEC9D889AE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReportServerWithTailwind", "examples\ReportServerWithTailwind\ReportServerWithTailwind.csproj", "{5470CCA2-DF4F-4F38-9E1B-FE6334BB902F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -48,6 +50,10 @@ Global
 		{B0C3AFB8-AA52-4947-863F-9DEEC9D889AE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B0C3AFB8-AA52-4947-863F-9DEEC9D889AE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B0C3AFB8-AA52-4947-863F-9DEEC9D889AE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5470CCA2-DF4F-4F38-9E1B-FE6334BB902F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5470CCA2-DF4F-4F38-9E1B-FE6334BB902F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5470CCA2-DF4F-4F38-9E1B-FE6334BB902F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5470CCA2-DF4F-4F38-9E1B-FE6334BB902F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{2AA5462E-57F7-4A4B-A1BB-1BFF901A7C22} = {84E7AF5B-BDD3-4FB3-A798-7E8541EE7A1E}
@@ -56,5 +62,6 @@ Global
 		{35F37EF3-9BFD-4C4A-ACDA-761D62E3E940} = {84E7AF5B-BDD3-4FB3-A798-7E8541EE7A1E}
 		{1C60A5A2-46DB-419D-BED1-5C97465076D0} = {C5BFD20E-2F4E-4EA8-AC79-82E91F93E70F}
 		{B0C3AFB8-AA52-4947-863F-9DEEC9D889AE} = {C5BFD20E-2F4E-4EA8-AC79-82E91F93E70F}
+		{5470CCA2-DF4F-4F38-9E1B-FE6334BB902F} = {C5BFD20E-2F4E-4EA8-AC79-82E91F93E70F}
 	EndGlobalSection
 EndGlobal
