@@ -29,6 +29,12 @@ public class BlazorReportsBrowserOptions
   public bool DisableDevShmUsage { get; set; }
 
   /// <summary>
+  /// Configures the browser to run in a non-headless mode.
+  /// When set to true, the browser will be visible, which can be useful for debugging.
+  /// </summary>
+  public bool DisableHeadless { get; set; }
+
+  /// <summary>
   /// Sets the maximum pool size for the browser. Defaults to 4
   /// </summary>
   public int MaxBrowserPoolSize { get; set; } = 4;
