@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/examples/">
+    <Project Path="examples/ExampleTemplates/ExampleTemplates.csproj" />
+    <Project Path="examples/SimpleReportServer/SimpleReportServer.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/BlazorReports.Client/BlazorReports.Client.csproj" />
+    <Project Path="src/BlazorReports.Components/BlazorReports.Components.csproj" />
+    <Project Path="src/BlazorReports.Viewer/BlazorReports.Viewer.csproj" />
+    <Project Path="src/BlazorReports/BlazorReports.csproj" />
+  </Folder>
+  <Folder Name="/tests/" />
+</Solution>
