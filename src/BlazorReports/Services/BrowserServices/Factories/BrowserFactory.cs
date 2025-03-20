@@ -114,7 +114,6 @@ internal sealed class BrowserFactory(
     Process chromiumProcess = new();
     List<string> defaultChromiumArgument =
     [
-      "--headless=new",
       "--disable-gpu",
       "--hide-scrollbars",
       "--mute-audio",
@@ -132,6 +131,11 @@ internal sealed class BrowserFactory(
       "--remote-debugging-port=\"0\"",
       $"--user-data-dir=\"{devToolsDirectory}\"",
     ];
+
+    if (!browserOptions.DisableHeadless)
+    {
+      defaultChromiumArgument.Add("--headless");
+    }
 
     if (browserOptions.NoSandbox)
     {
