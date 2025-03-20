@@ -79,29 +79,38 @@ Sample Blazor Components
     ```
 2. Configured components will now have the base styles applied.
 
-### Configure Tailwind CSS
-1. Add 'tailwind.config.js' file to the root of your project:
-    ```js
-    /** @type {import('tailwindcss').Config} */
-    module.exports = {
-    content: ['./**/*.{razor,html}'],
-    theme: {
-    extend: {},
-    },
-    plugins: [],
+### Configure Tailwind CSS V4
+1. Add Tailwind to the root of your repository:
+    ```bash
+    bun install tailwindcss @tailwindcss/cli
+    ```
+2. Add 'wwwroot/tailwindcss/input.css' file to your project:
+    ```css
+    @import "tailwindcss";
+    ```
+3. Add a watch and build script to your package.json for convenience:
+    ```json
+    {
+      "scripts": {
+        "tailwind-watch": "tailwindcss -i ./path_to_your_project/wwwroot/tailwindcss/input.css -o ./path_to_your_project/wwwroot/styles/base.css -m --watch",
+        "tailwind-build": "tailwindcss -i ./path_to_your_project/wwwroot/tailwindcss/input.css -o ./path_to_your_project/wwwroot/styles/base.css -m"
+      },
+      "dependencies": {
+        "@tailwindcss/cli": "^4.0.14",
+        "tailwindcss": "^4.0.14"
+      }
     }
     ```
-2. Add 'tailwind.css' file:
-    ```css
-    @tailwind base;
-    @tailwind components;
-    @tailwind utilities;
-    ```
-3. Use the following command to generate the base.css file:
+4. Use the following command to generate the base.css file:
     ```bash
-    npx tailwindcss -i ./wwwroot/styles/tailwind/tailwind.css -o ./wwwroot/styles/base.css -m --watch
+    bun run tailwind-build # To build once
+    bun run tailwind-watch # To watch for changes
     ```
-4. Configure BaseStyles in Program.cs:
+5. Alternatively, use the tailwind cli to generate the base.css file:
+    ```bash
+    bunx @tailwindcss/cli -i ./path_to_your_project/wwwroot/tailwindcss/input.css -o ./path_to_your_project/wwwroot/styles/base.css -m --watch
+    ```
+6. Finally, configure BaseStyles in the Program.cs:
     ```c#
     var builder = WebApplication.CreateSlimBuilder(args);
     
