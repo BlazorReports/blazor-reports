@@ -7,10 +7,7 @@ var builder = WebApplication.CreateSlimBuilder(args);
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddBlazorReports(opts =>
-{
-  opts.BrowserOptions.ResponseTimeout = TimeSpan.FromSeconds(90);
-});
+builder.Services.AddBlazorReports();
 
 var app = builder.Build();
 

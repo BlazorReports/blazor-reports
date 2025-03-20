@@ -2,6 +2,7 @@
   <Folder Name="/examples/">
     <Project Path="examples/ExampleTemplates/ExampleTemplates.csproj" />
     <Project Path="examples/SimpleReportServer/SimpleReportServer.csproj" />
+    <Project Path="examples\TailwindReportServer\TailwindReportServer.csproj" Type="Classic C#" />
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/BlazorReports.Client/BlazorReports.Client.csproj" />

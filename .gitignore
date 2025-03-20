@@ -46,3 +46,7 @@ msbuild.wrn
 
 #Visual Studio Exclude
 .vs/*
+
+# Javascript
+node_modules/
+base.css
