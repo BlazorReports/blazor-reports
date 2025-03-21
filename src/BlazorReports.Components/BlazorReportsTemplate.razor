@@ -10,7 +10,7 @@
                 this.ready(); // Set it to false initially
             }
 
-            ready() {
+            notReady() {
                 window[this.signalName] = false;
             }
 
@@ -21,6 +21,26 @@
 
         // Create global instance with the provided signal name
         window.blazorReport = new BlazorReport("@ReportIsReadySignal");
+
+                // Function to wait for signal change
+        window.waitForSignal = (expectedValue = 'ready', timeoutMs = 5000, intervalMs = 50) => {
+          return new Promise((resolve, reject) => {
+            const start = Date.now();
+
+            const check = () => {
+              if (window.reportSignal === expectedValue) {
+                clearInterval(interval);
+                resolve('Signal received');
+              } else if (Date.now() - start > timeoutMs) {
+                clearInterval(interval);
+                reject(new Error('Timeout waiting for signal'));
+              }
+            };
+
+            const interval = setInterval(check, intervalMs);
+            check(); // In case it's already ready
+          });
+        };
     </script>
 </head>
 <body>

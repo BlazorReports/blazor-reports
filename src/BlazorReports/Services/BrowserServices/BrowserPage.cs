@@ -107,28 +107,18 @@ internal sealed class BrowserPage(
   /// <summary>
   /// Waits for a JavaScript flag to be set
   /// </summary>
-  /// <param name="flagName"></param>
   /// <param name="timeout"></param>
   /// <param name="stoppingToken"></param>
   /// <returns></returns>
-  /// <exception cref="TimeoutException"></exception>
-  internal async Task WaitForJsFlagAsync(string flagName, TimeSpan timeout, CancellationToken stoppingToken)
+  internal async Task<bool> WaitForJsFlagAsync(TimeSpan timeout, CancellationToken stoppingToken)
   {
-    var stopwatch = Stopwatch.StartNew();
+    string script = $"waitForSignal('ready', {timeout.TotalMilliseconds})";
 
-    while (stopwatch.Elapsed < timeout)
-    {
-      bool flagSet = await CheckIfFlagIsSetAsync(flagName, stoppingToken);
-      if (flagSet)
-      {
-        return;
-      }
+    var result = await EvaluateJavaScriptAsync(script, stoppingToken);
 
-      await Task.Delay(500, stoppingToken); // Poll every 500ms
-    }
-
-    return;
+    return result == "Signal received";
   }
+
   /// <summary>
   /// Checks if a JavaScript flag exists
   /// </summary>
@@ -166,6 +156,42 @@ internal sealed class BrowserPage(
     );
 
     return flagExists;
+  }
+  /// <summary>
+  /// Evaluates JavaScript code
+  /// </summary>
+  /// <param name="script"></param>
+  /// <param name="stoppingToken"></param>
+  /// <returns></returns>
+  internal async Task<string?> EvaluateJavaScriptAsync(string script, CancellationToken stoppingToken)
+  {
+    var evaluateMessage = new BrowserMessage("Runtime.evaluate");
+    evaluateMessage.Parameters.Add("expression", script);
+    evaluateMessage.Parameters.Add("returnByValue", true);
+    evaluateMessage.Parameters.Add("awaitPromise", true); // ✅ Ensures JS Promises resolve
+
+    string? evaluatedValue = null;
+
+    await connection.SendAsync(
+        evaluateMessage,
+        RuntimeEvaluateResponseSerializationContext.Default.BrowserResultResponseRuntimeEvaluateResponse,
+        evaluateResponse =>
+        {
+          if (evaluateResponse.Result.WasThrown && evaluateResponse.Result.ExceptionDetails is not null)
+          {
+            // Handle JS error
+            return;
+          }
+
+          if (evaluateResponse.Result.Result?.Type == "string")
+          {
+            evaluatedValue = evaluateResponse.Result.Result?.Value?.GetString();
+          }
+        },
+        stoppingToken
+    );
+
+    return evaluatedValue;
   }
 
   internal async ValueTask ConvertPageToPdf(

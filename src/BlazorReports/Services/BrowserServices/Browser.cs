@@ -102,7 +102,6 @@ internal sealed class Browser(
         if (reportIsReadyFlagHasBeenSet)
         {
           await browserPage.WaitForJsFlagAsync(
-            reportIsReadyFlagName,
             javascriptSettings.ReportTimeout,
             cancellationToken
           );
