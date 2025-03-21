@@ -9,7 +9,9 @@
 
     @foreach (var script in Scripts)
     {
-        <script>@script.Value</script>
+        <script>
+            @((MarkupString)@script.Value)
+        </script>
     }
 
 
