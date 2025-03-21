@@ -1,23 +1,15 @@
-window.reportIsReady = false;
+// Set report status to "processing"
+blazorReport.ready();
 
+// Get the element with id "HelloWorld"
+var element = document.getElementById("HelloWorld");
 
-(function () {
-  var helloWorld = document.getElementById('HelloWorld');
-
-  if (!helloWorld) {
-    helloWorld = document.createElement('p'); // Create the element
-    helloWorld.id = 'HelloWorld';
-    document.body.appendChild(helloWorld); // Append it to the body
-  }
-
-  helloWorld.innerHTML = 'Hello World'; // Set text instantly
-})();
-
-
-
-//Wait 10 seconds and set reportIsReady to true
-
-setTimeout(function () {
-  window.reportIsReady = true;
+// Set innerHTML to "Hello from JavaScript"
+if (element) {
+  element.innerHTML = "Hello from JavaScript";
 }
-  , 10000);
+
+// Wait 10 seconds, then mark report as ready
+setTimeout(() => {
+  blazorReport.completed();
+}, 2_000);

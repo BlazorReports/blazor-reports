@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using OneOf;
 using OneOf.Types;
 
@@ -101,6 +102,8 @@ public sealed class ReportService(
     using var scope = serviceProvider.CreateScope();
     var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
     var javascriptContainer = scope.ServiceProvider.GetRequiredService<JavascriptContainer>();
+    var options = scope.ServiceProvider.GetRequiredService<IOptions<BlazorReportsOptions>>();
+    var javascriptInternalSettings = options.Value.JavascriptInternalSettings;
 
     var baseStyles = string.Empty;
     if (!string.IsNullOrEmpty(blazorReport.BaseStyles))
@@ -142,6 +145,7 @@ public sealed class ReportService(
     }
 
 
+    baseComponentParameters.Add("ReportIsReadySignal", javascriptInternalSettings.ReportIsReadySignal);
     baseComponentParameters.Add("ChildComponentType", blazorReport.Component);
     baseComponentParameters.Add("ChildComponentParameters", childComponentParameters);
 

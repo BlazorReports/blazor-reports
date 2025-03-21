@@ -27,5 +27,5 @@ public class BlazorReportsOptions
   /// <summary>
   /// Javascript api settings
   /// </summary>
-  public BlazorReportJavascriptSettings JavascriptSettings { get; set; } = new();
+  public BlazorReportJavascriptSettings JavascriptInternalSettings { get; set; } = new();
 }

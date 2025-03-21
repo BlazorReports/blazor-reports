@@ -2,7 +2,26 @@
 <html lang="en">
 <head>
     <style>@((MarkupString)BaseStyles)</style>
+    <script>
+        // Define BlazorReport class
+        class BlazorReport {
+            constructor(signalName) {
+                this.signalName = signalName;
+                this.ready(); // Set it to false initially
+            }
 
+            ready() {
+                window[this.signalName] = false;
+            }
+
+            completed() {
+                window[this.signalName] = true;
+            }
+        }
+
+        // Create global instance with the provided signal name
+        window.blazorReport = new BlazorReport("@ReportIsReadySignal");
+    </script>
 </head>
 <body>
     <DynamicComponent Type="@ChildComponentType" Parameters="@ChildComponentParameters" />
@@ -13,11 +32,8 @@
             @((MarkupString)@script.Value)
         </script>
     }
-
-
 </body>
 </html>
-
 
 @code {
     /// <summary>
@@ -25,11 +41,13 @@
     /// </summary>
     [Parameter]
     public string BaseStyles { get; set; } = "";
+
     /// <summary>
     /// The type of the component to be rendered in the html body.
     /// </summary>
     [Parameter]
     public Type ChildComponentType { get; set; } = null!;
+
     /// <summary>
     /// The parameters to be passed to the child component.
     /// </summary>
@@ -41,4 +59,10 @@
     /// </summary>
     [Parameter]
     public Dictionary<string, string> Scripts { get; set; } = new Dictionary<string, string>();
+
+    /// <summary>
+    /// The name of the JavaScript signal used to indicate when the report is ready.
+    /// </summary>
+    [Parameter]
+    public string ReportIsReadySignal { get; set; } = "reportIsReady";
 }
