@@ -2,6 +2,7 @@ using BlazorReports.Models;
 using BlazorReports.Services;
 using BlazorReports.Services.BrowserServices;
 using BlazorReports.Services.BrowserServices.Factories;
+using BlazorReports.Services.JavascriptServices;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Routing.Constraints;
 using Microsoft.Extensions.DependencyInjection;
@@ -26,6 +27,8 @@ public static class ServiceCollectionExtensions
   {
     services.Configure(options ?? (_ => { }));
     services.AddSingleton<BlazorReportRegistry>();
+    services.AddSingleton<JavascriptContainer>();
+
     services.AddSingleton<IConnectionFactory, ConnectionFactory>();
     services.AddSingleton<IBrowserFactory, BrowserFactory>();
     services.AddSingleton<IBrowserPageFactory, BrowserPageFactory>();

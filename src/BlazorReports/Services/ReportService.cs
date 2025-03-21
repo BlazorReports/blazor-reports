@@ -3,6 +3,7 @@ using BlazorReports.Components;
 using BlazorReports.Models;
 using BlazorReports.Services.BrowserServices;
 using BlazorReports.Services.BrowserServices.Problems;
+using BlazorReports.Services.JavascriptServices;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.DependencyInjection;
@@ -99,6 +100,7 @@ public sealed class ReportService(
   {
     using var scope = serviceProvider.CreateScope();
     var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
+    var javascriptContainer = scope.ServiceProvider.GetRequiredService<JavascriptContainer>();
 
     var baseStyles = string.Empty;
     if (!string.IsNullOrEmpty(blazorReport.BaseStyles))
@@ -134,6 +136,11 @@ public sealed class ReportService(
     {
       baseComponentParameters.Add("BaseStyles", baseStyles);
     }
+    if (javascriptContainer.Scripts.Count > 0)
+    {
+      baseComponentParameters.Add("Scripts", javascriptContainer.Scripts);
+    }
+
 
     baseComponentParameters.Add("ChildComponentType", blazorReport.Component);
     baseComponentParameters.Add("ChildComponentParameters", childComponentParameters);
