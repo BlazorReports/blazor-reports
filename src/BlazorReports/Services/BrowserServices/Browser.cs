@@ -21,6 +21,7 @@ internal sealed class Browser(
   DirectoryInfo dataDirectory,
   Connection connection,
   BlazorReportsBrowserOptions browserOptions,
+  BlazorReportJavascriptSettings javascriptSettings,
   ILogger logger,
   IBrowserPageFactory browserPageFactory
 ) : IAsyncDisposable
@@ -91,7 +92,22 @@ internal sealed class Browser(
 
       try
       {
+        var reportIsReadyFlagName = javascriptSettings.ReportIsReadySignal;
         await browserPage.DisplayHtml(html, cancellationToken);
+        var reportIsReadyFlagHasBeenSet = await browserPage.DoesJsFlagExistAsync(
+          reportIsReadyFlagName,
+          cancellationToken
+        );
+
+        if (reportIsReadyFlagHasBeenSet)
+        {
+          await browserPage.WaitForJsFlagAsync(
+            reportIsReadyFlagName,
+            javascriptSettings.ReportTimeout,
+            cancellationToken
+          );
+        }
+
         await browserPage.ConvertPageToPdf(pipeWriter, pageSettings, cancellationToken);
       }
       catch (Exception e)

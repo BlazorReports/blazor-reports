@@ -30,7 +30,7 @@ internal sealed class BrowserFactory(
   public async ValueTask<OneOf<Browser, BrowserProblem>> CreateBrowser()
   {
     var browserOptions = options.Value.BrowserOptions;
-
+    var javascriptSettings = options.Value.JavascriptSettings;
     var browserExecutableLocation = browserOptions.BrowserExecutableLocation is not null
       ? browserOptions.BrowserExecutableLocation.FullName
       : BrowserFinder.Find(browserOptions.Browser);
@@ -93,6 +93,7 @@ internal sealed class BrowserFactory(
       devToolsActivePortDirectory,
       connection,
       browserOptions,
+      javascriptSettings,
       browserLogger,
       browserPageFactory
     );

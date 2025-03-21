@@ -1,3 +1,6 @@
+window.reportIsReady = false;
+
+
 (function () {
   var helloWorld = document.getElementById('HelloWorld');
 
@@ -9,3 +12,12 @@
 
   helloWorld.innerHTML = 'Hello World'; // Set text instantly
 })();
+
+
+
+//Wait 10 seconds and set reportIsReady to true
+
+setTimeout(function () {
+  window.reportIsReady = true;
+}
+  , 10000);

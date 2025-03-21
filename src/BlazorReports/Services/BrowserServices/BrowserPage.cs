@@ -1,4 +1,5 @@
 using System.Buffers;
+using System.Diagnostics;
 using System.IO.Pipelines;
 using System.Security.Cryptography;
 using System.Text;
@@ -68,6 +69,103 @@ internal sealed class BrowserPage(
       },
       stoppingToken
     );
+  }
+  /// <summary>
+  /// Checks if a JavaScript flag is set
+  /// </summary>
+  /// <param name="flagName">Flag to be checked</param>
+  /// <param name="stoppingToken">cancellation token</param>
+  /// <returns>Returns the flag current value</returns>
+  internal async Task<bool> CheckIfFlagIsSetAsync(string flagName, CancellationToken stoppingToken = default)
+  {
+    await connection.ConnectAsync(stoppingToken);
+
+    BrowserMessage evaluateMessage = new("Runtime.evaluate");
+    evaluateMessage.Parameters.Add("expression", $"window.{flagName} === true");
+    evaluateMessage.Parameters.Add("returnByValue", true);
+    evaluateMessage.Parameters.Add("awaitPromise", true);
+
+    bool isFlagSet = false;
+
+    await connection.SendAsync(
+        evaluateMessage,
+        RuntimeEvaluateResponseSerializationContext
+            .Default
+            .BrowserResultResponseRuntimeEvaluateResponse,
+        evaluateResponse =>
+        {
+          if (!evaluateResponse.Result.WasThrown && evaluateResponse.Result.Result?.Type == "boolean")
+          {
+            isFlagSet = evaluateResponse.Result.Result?.Value?.GetBoolean() ?? false;
+          }
+        },
+        stoppingToken
+    );
+
+    return isFlagSet;
+  }
+  /// <summary>
+  /// Waits for a JavaScript flag to be set
+  /// </summary>
+  /// <param name="flagName"></param>
+  /// <param name="timeout"></param>
+  /// <param name="stoppingToken"></param>
+  /// <returns></returns>
+  /// <exception cref="TimeoutException"></exception>
+  internal async Task WaitForJsFlagAsync(string flagName, TimeSpan timeout, CancellationToken stoppingToken)
+  {
+    var stopwatch = Stopwatch.StartNew();
+
+    while (stopwatch.Elapsed < timeout)
+    {
+      bool flagSet = await CheckIfFlagIsSetAsync(flagName, stoppingToken);
+      if (flagSet)
+      {
+        return;
+      }
+
+      await Task.Delay(500, stoppingToken); // Poll every 500ms
+    }
+
+    return;
+  }
+  /// <summary>
+  /// Checks if a JavaScript flag exists
+  /// </summary>
+  /// <param name="flagName"></param>
+  /// <param name="stoppingToken"></param>
+  /// <returns></returns>
+  internal async Task<bool> DoesJsFlagExistAsync(string flagName, CancellationToken stoppingToken = default)
+  {
+    await connection.ConnectAsync(stoppingToken);
+
+    // JavaScript Expression: Check if the flag exists in the window object
+    string jsCheck = $"typeof window.{flagName} !== 'undefined'";
+
+    BrowserMessage evaluateMessage = new("Runtime.evaluate");
+    evaluateMessage.Parameters.Add("expression", jsCheck);
+    evaluateMessage.Parameters.Add("returnByValue", true);
+    evaluateMessage.Parameters.Add("awaitPromise", true);
+
+    bool flagExists = false;
+
+    await connection.SendAsync(
+        evaluateMessage,
+        RuntimeEvaluateResponseSerializationContext
+            .Default
+            .BrowserResultResponseRuntimeEvaluateResponse,
+        evaluateResponse =>
+        {
+          // If JavaScript returns "true", it means the flag exists
+          if (evaluateResponse.Result.Result?.Type == "boolean")
+          {
+            flagExists = evaluateResponse.Result.Result?.Value?.GetBoolean() ?? false;
+          }
+        },
+        stoppingToken
+    );
+
+    return flagExists;
   }
 
   internal async ValueTask ConvertPageToPdf(
