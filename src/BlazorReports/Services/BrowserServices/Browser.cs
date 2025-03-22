@@ -111,7 +111,7 @@ internal sealed class Browser(
           var isReportCompletingSignal = HtmlParserHelper.IsUsingMethodInScripts(
             html,
             "completed",
-            "default-server-script"
+            "ignore-server-script"
           );
           if (!isReportCompletingSignal)
             return new ReportIsNotCompletingSignal();

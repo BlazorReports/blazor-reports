@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
+
 namespace BlazorReports.Extensions;
 
 /// <summary>
@@ -95,36 +96,77 @@ public static class ReportExtensions
         {
           var contentType = blazorReport.GetContentType();
           var extension = blazorReport.GetFileExtension();
-          context.Response.ContentType = contentType;
           context.Response.Headers.Append(
             "Content-Disposition",
             $"attachment; filename=\"{blazorReport.Name}.{extension}\""
           );
+          context.Response.ContentType = contentType;
           var result = await reportService.GenerateReport(
             context.Response.BodyWriter,
             blazorReport,
             token
           );
 
-          var errorStatusCode = result.Match(
-            _ => (int?)null,
-            _ => StatusCodes.Status503ServiceUnavailable,
-            _ => StatusCodes.Status499ClientClosedRequest,
-            _ => StatusCodes.Status500InternalServerError,
-            _ => StatusCodes.Status408RequestTimeout,
-            _ => StatusCodes.Status500InternalServerError
+          return result.Match<Results<FileStreamHttpResult, ProblemHttpResult>>(
+            success => TypedResults.File(context.Response.Body, contentType),
+            serverBusy =>
+            {
+              context.Response.Headers.Clear();
+              context.Response.ContentType = "application/problem+json";
+              return TypedResults.Problem(
+                title: "Server Busy",
+                detail: "The report service is currently handling the maximum number of concurrent reports.",
+                statusCode: StatusCodes.Status503ServiceUnavailable
+              );
+            },
+            cancelled =>
+            {
+              context.Response.Headers.Clear();
+              context.Response.ContentType = "application/problem+json";
+              return TypedResults.Problem(
+                title: "Request Cancelled",
+                detail: "The request was cancelled by the client.",
+                statusCode: StatusCodes.Status499ClientClosedRequest
+              );
+            },
+            browserProblem =>
+            {
+              context.Response.Headers.Clear();
+              context.Response.ContentType = "application/problem+json";
+              return TypedResults.Problem(
+                title: "Browser Error",
+                detail: "An internal error occurred while processing the report.",
+                statusCode: StatusCodes.Status500InternalServerError
+              );
+            },
+            jsTimeout =>
+            {
+              context.Response.Headers.Clear();
+              context.Response.ContentType = "application/problem+json";
+              return TypedResults.Problem(
+                title: "JavaScript Timeout",
+                detail: "The JavaScript did not signal completion before the timeout expired.",
+                statusCode: StatusCodes.Status408RequestTimeout
+              );
+            },
+            notCompleted =>
+            {
+              context.Response.Headers.Clear();
+              context.Response.ContentType = "application/problem+json";
+              return TypedResults.Problem(
+                title: "Completion Not Signaled",
+                detail: "WaitForJavascriptCompletedSignal was enabled, but .completed() was not called in JavaScript.",
+                statusCode: StatusCodes.Status500InternalServerError
+              );
+            }
           );
-
-          if (errorStatusCode is not null)
-          {
-            context.Response.StatusCode = errorStatusCode.Value;
-            await context.Response.BodyWriter.CompleteAsync();
-          }
         }
       )
-      .Produces<FileStreamHttpResult>(200, blazorReport.GetContentType())
-      .Produces(StatusCodes.Status408RequestTimeout)
-      .Produces(StatusCodes.Status503ServiceUnavailable);
+      .Produces<FileStreamHttpResult>(StatusCodes.Status200OK, blazorReport.GetContentType())
+      .ProducesProblem(StatusCodes.Status408RequestTimeout)
+      .ProducesProblem(StatusCodes.Status499ClientClosedRequest)
+      .ProducesProblem(StatusCodes.Status500InternalServerError)
+      .ProducesProblem(StatusCodes.Status503ServiceUnavailable);
   }
 
   /// <summary>
@@ -151,8 +193,8 @@ public static class ReportExtensions
 
     return endpoints
       .MapPost(
-        $"{blazorReport.NormalizedName}",
-        async (
+        $"/{blazorReport.NormalizedName}",
+        async Task<Results<FileStreamHttpResult, ProblemHttpResult>> (
           TD data,
           [FromServices] IReportService reportService,
           HttpContext context,
@@ -161,11 +203,11 @@ public static class ReportExtensions
         {
           var contentType = blazorReport.GetContentType();
           var extension = blazorReport.GetFileExtension();
-          context.Response.ContentType = contentType;
           context.Response.Headers.Append(
             "Content-Disposition",
             $"attachment; filename=\"{blazorReport.Name}.{extension}\""
           );
+          context.Response.ContentType = contentType;
           var result = await reportService.GenerateReport(
             context.Response.BodyWriter,
             blazorReport,
@@ -173,25 +215,66 @@ public static class ReportExtensions
             token
           );
 
-          var errorStatusCode = result.Match(
-            _ => (int?)null,
-            _ => StatusCodes.Status503ServiceUnavailable,
-            _ => StatusCodes.Status499ClientClosedRequest,
-            _ => StatusCodes.Status500InternalServerError,
-            _ => StatusCodes.Status408RequestTimeout,
-            _ => StatusCodes.Status500InternalServerError
+          return result.Match<Results<FileStreamHttpResult, ProblemHttpResult>>(
+            success => TypedResults.File(context.Response.Body, contentType),
+            serverBusy =>
+            {
+              context.Response.Headers.Clear();
+              context.Response.ContentType = "application/problem+json";
+              return TypedResults.Problem(
+                title: "Server Busy",
+                detail: "The report service is currently handling the maximum number of concurrent reports.",
+                statusCode: StatusCodes.Status503ServiceUnavailable
+              );
+            },
+            cancelled =>
+            {
+              context.Response.Headers.Clear();
+              context.Response.ContentType = "application/problem+json";
+              return TypedResults.Problem(
+                title: "Request Cancelled",
+                detail: "The request was cancelled by the client.",
+                statusCode: StatusCodes.Status499ClientClosedRequest
+              );
+            },
+            browserProblem =>
+            {
+              context.Response.Headers.Clear();
+              context.Response.ContentType = "application/problem+json";
+              return TypedResults.Problem(
+                title: "Browser Error",
+                detail: "An internal error occurred while processing the report.",
+                statusCode: StatusCodes.Status500InternalServerError
+              );
+            },
+            jsTimeout =>
+            {
+              context.Response.Headers.Clear();
+              context.Response.ContentType = "application/problem+json";
+              return TypedResults.Problem(
+                title: "JavaScript Timeout",
+                detail: "The JavaScript did not signal completion before the timeout expired.",
+                statusCode: StatusCodes.Status408RequestTimeout
+              );
+            },
+            notCompleted =>
+            {
+              context.Response.Headers.Clear();
+              context.Response.ContentType = "application/problem+json";
+              return TypedResults.Problem(
+                title: "Completion Not Signaled",
+                detail: "WaitForJavascriptCompletedSignal was enabled, but .completed() was not called in JavaScript.",
+                statusCode: StatusCodes.Status500InternalServerError
+              );
+            }
           );
-
-          if (errorStatusCode is not null)
-          {
-            context.Response.StatusCode = errorStatusCode.Value;
-            await context.Response.BodyWriter.CompleteAsync();
-          }
         }
       )
-      .Produces<FileStreamHttpResult>(200, blazorReport.GetContentType())
-      .Produces(StatusCodes.Status408RequestTimeout)
-      .Produces(StatusCodes.Status503ServiceUnavailable);
+      .Produces<FileStreamHttpResult>(StatusCodes.Status200OK, blazorReport.GetContentType())
+      .ProducesProblem(StatusCodes.Status408RequestTimeout)
+      .ProducesProblem(StatusCodes.Status499ClientClosedRequest)
+      .ProducesProblem(StatusCodes.Status500InternalServerError)
+      .ProducesProblem(StatusCodes.Status503ServiceUnavailable);
   }
 
   private static BlazorReportRegistrationOptions GetReportRegistrationOptions(

@@ -1,18 +1,27 @@
+
+<p id="HelloWorld"></p>
+
+
 <script>
 
     var element = document.getElementById("HelloWorld");
 
 
     if (element) {
-      element.innerHTML = "<h1>Hello from JavaScript</h1>";
+    element.innerHTML = "<h1>Hello from JavaScript</h1>";
     }
 
 
     setTimeout(() => {
+    @if (Data.ShouldContainCompletedJsMethod)
+    {
+        //This is for testing purposes only.
+        @("blazorReport.completed()")
+    }
+
     }, @Data.TimeSpan.TotalMilliseconds)
 
 </script>
-<p id="HelloWorld"></p>
 
 @code {
   [Parameter]
