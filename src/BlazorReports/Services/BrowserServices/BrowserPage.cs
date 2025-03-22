@@ -70,13 +70,17 @@ internal sealed class BrowserPage(
       stoppingToken
     );
   }
+
   /// <summary>
   /// Checks if a JavaScript flag is set
   /// </summary>
   /// <param name="flagName">Flag to be checked</param>
   /// <param name="stoppingToken">cancellation token</param>
   /// <returns>Returns the flag current value</returns>
-  internal async Task<bool> CheckIfFlagIsSetAsync(string flagName, CancellationToken stoppingToken = default)
+  internal async Task<bool> CheckIfFlagIsSetAsync(
+    string flagName,
+    CancellationToken stoppingToken = default
+  )
   {
     await connection.ConnectAsync(stoppingToken);
 
@@ -88,22 +92,23 @@ internal sealed class BrowserPage(
     bool isFlagSet = false;
 
     await connection.SendAsync(
-        evaluateMessage,
-        RuntimeEvaluateResponseSerializationContext
-            .Default
-            .BrowserResultResponseRuntimeEvaluateResponse,
-        evaluateResponse =>
+      evaluateMessage,
+      RuntimeEvaluateResponseSerializationContext
+        .Default
+        .BrowserResultResponseRuntimeEvaluateResponse,
+      evaluateResponse =>
+      {
+        if (!evaluateResponse.Result.WasThrown && evaluateResponse.Result.Result?.Type == "boolean")
         {
-          if (!evaluateResponse.Result.WasThrown && evaluateResponse.Result.Result?.Type == "boolean")
-          {
-            isFlagSet = evaluateResponse.Result.Result?.Value?.GetBoolean() ?? false;
-          }
-        },
-        stoppingToken
+          isFlagSet = evaluateResponse.Result.Result?.Value?.GetBoolean() ?? false;
+        }
+      },
+      stoppingToken
     );
 
     return isFlagSet;
   }
+
   /// <summary>
   /// Waits for a JavaScript flag to be set
   /// </summary>
@@ -125,7 +130,10 @@ internal sealed class BrowserPage(
   /// <param name="flagName"></param>
   /// <param name="stoppingToken"></param>
   /// <returns></returns>
-  internal async Task<bool> DoesJsFlagExistAsync(string flagName, CancellationToken stoppingToken = default)
+  internal async Task<bool> DoesJsFlagExistAsync(
+    string flagName,
+    CancellationToken stoppingToken = default
+  )
   {
     await connection.ConnectAsync(stoppingToken);
 
@@ -140,55 +148,63 @@ internal sealed class BrowserPage(
     bool flagExists = false;
 
     await connection.SendAsync(
-        evaluateMessage,
-        RuntimeEvaluateResponseSerializationContext
-            .Default
-            .BrowserResultResponseRuntimeEvaluateResponse,
-        evaluateResponse =>
+      evaluateMessage,
+      RuntimeEvaluateResponseSerializationContext
+        .Default
+        .BrowserResultResponseRuntimeEvaluateResponse,
+      evaluateResponse =>
+      {
+        // If JavaScript returns "true", it means the flag exists
+        if (evaluateResponse.Result.Result?.Type == "boolean")
         {
-          // If JavaScript returns "true", it means the flag exists
-          if (evaluateResponse.Result.Result?.Type == "boolean")
-          {
-            flagExists = evaluateResponse.Result.Result?.Value?.GetBoolean() ?? false;
-          }
-        },
-        stoppingToken
+          flagExists = evaluateResponse.Result.Result?.Value?.GetBoolean() ?? false;
+        }
+      },
+      stoppingToken
     );
 
     return flagExists;
   }
+
   /// <summary>
   /// Evaluates JavaScript code
   /// </summary>
   /// <param name="script"></param>
   /// <param name="stoppingToken"></param>
   /// <returns></returns>
-  internal async Task<string?> EvaluateJavaScriptAsync(string script, CancellationToken stoppingToken)
+  internal async Task<string?> EvaluateJavaScriptAsync(
+    string script,
+    CancellationToken stoppingToken
+  )
   {
     var evaluateMessage = new BrowserMessage("Runtime.evaluate");
     evaluateMessage.Parameters.Add("expression", script);
     evaluateMessage.Parameters.Add("returnByValue", true);
-    evaluateMessage.Parameters.Add("awaitPromise", true); 
+    evaluateMessage.Parameters.Add("awaitPromise", true);
 
     string? evaluatedValue = null;
 
     await connection.SendAsync(
-        evaluateMessage,
-        RuntimeEvaluateResponseSerializationContext.Default.BrowserResultResponseRuntimeEvaluateResponse,
-        evaluateResponse =>
+      evaluateMessage,
+      RuntimeEvaluateResponseSerializationContext
+        .Default
+        .BrowserResultResponseRuntimeEvaluateResponse,
+      evaluateResponse =>
+      {
+        if (
+          evaluateResponse.Result.WasThrown && evaluateResponse.Result.ExceptionDetails is not null
+        )
         {
-          if (evaluateResponse.Result.WasThrown && evaluateResponse.Result.ExceptionDetails is not null)
-          {
-            // Handle JS error
-            return;
-          }
+          // Handle JS error
+          return;
+        }
 
-          if (evaluateResponse.Result.Result?.Type == "string")
-          {
-            evaluatedValue = evaluateResponse.Result.Result?.Value?.GetString();
-          }
-        },
-        stoppingToken
+        if (evaluateResponse.Result.Result?.Type == "string")
+        {
+          evaluatedValue = evaluateResponse.Result.Result?.Value?.GetString();
+        }
+      },
+      stoppingToken
     );
 
     return evaluatedValue;

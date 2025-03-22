@@ -52,7 +52,13 @@ internal sealed class BrowserService : IAsyncDisposable, IBrowserService
   /// <param name="cancellationToken"> The cancellation token </param>
   /// <returns> The result of the operation </returns>
   public async ValueTask<
-    OneOf<Success, ServerBusyProblem, OperationCancelledProblem, BrowserProblem>
+    OneOf<
+      Success,
+      ServerBusyProblem,
+      OperationCancelledProblem,
+      BrowserProblem,
+      JavascriptTimedoutProblem
+    >
   > GenerateReport(
     PipeWriter pipeWriter,
     string html,

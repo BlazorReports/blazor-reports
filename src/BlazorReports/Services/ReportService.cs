@@ -40,7 +40,13 @@ public sealed class ReportService(
   /// <typeparam name="TD"> The type of data to use in the report </typeparam>
   /// <returns> The generated report </returns>
   public async ValueTask<
-    OneOf<Success, ServerBusyProblem, OperationCancelledProblem, BrowserProblem>
+    OneOf<
+      Success,
+      ServerBusyProblem,
+      OperationCancelledProblem,
+      BrowserProblem,
+      JavascriptTimedoutProblem
+    >
   > GenerateReport<T, TD>(
     PipeWriter pipeWriter,
     BlazorReport report,
@@ -93,7 +99,13 @@ public sealed class ReportService(
   /// <typeparam name="T"> The type of data to use in the report </typeparam>
   /// <returns> The generated report </returns>
   public async ValueTask<
-    OneOf<Success, ServerBusyProblem, OperationCancelledProblem, BrowserProblem>
+    OneOf<
+      Success,
+      ServerBusyProblem,
+      OperationCancelledProblem,
+      BrowserProblem,
+      JavascriptTimedoutProblem
+    >
   > GenerateReport<T>(
     PipeWriter pipeWriter,
     BlazorReport blazorReport,
@@ -208,7 +220,13 @@ public sealed class ReportService(
   /// <param name="cancellationToken"> The cancellation token </param>
   /// <returns> The generated report </returns>
   public ValueTask<
-    OneOf<Success, ServerBusyProblem, OperationCancelledProblem, BrowserProblem>
+    OneOf<
+      Success,
+      ServerBusyProblem,
+      OperationCancelledProblem,
+      BrowserProblem,
+      JavascriptTimedoutProblem
+    >
   > GenerateReport(
     PipeWriter pipeWriter,
     BlazorReport blazorReport,

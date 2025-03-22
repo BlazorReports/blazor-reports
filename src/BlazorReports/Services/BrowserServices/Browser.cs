@@ -31,7 +31,13 @@ internal sealed class Browser(
   private readonly SemaphoreSlim _poolLock = new(1, 1);
 
   public async ValueTask<
-    OneOf<Success, ServerBusyProblem, OperationCancelledProblem, BrowserProblem>
+    OneOf<
+      Success,
+      ServerBusyProblem,
+      OperationCancelledProblem,
+      BrowserProblem,
+      JavascriptTimedoutProblem
+    >
   > GenerateReport(
     PipeWriter pipeWriter,
     string html,
@@ -106,7 +112,11 @@ internal sealed class Browser(
 
           TimeSpan timeout = currentReportTimeout ?? globalTimeout;
 
-          await browserPage.WaitForJsFlagAsync(timeout, cancellationToken);
+          var didNotHitTimeOut = await browserPage.WaitForJsFlagAsync(timeout, cancellationToken);
+          if (!didNotHitTimeOut)
+          {
+            return new JavascriptTimedoutProblem();
+          }
         }
 
         await browserPage.ConvertPageToPdf(pipeWriter, pageSettings, cancellationToken);

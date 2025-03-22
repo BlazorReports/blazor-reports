@@ -1,0 +1,22 @@
+<script>
+
+    var element = document.getElementById("HelloWorld");
+
+
+    if (element) {
+      element.innerHTML = "<h1>Hello from JavaScript</h1>";
+    }
+
+
+    setTimeout(() => {
+      blazorReport.completed();
+    }, @Data.TimeSpan.TotalMilliseconds)
+
+</script>
+<p id="HelloWorld"></p>
+
+@code {
+  [Parameter]
+    public required SimpleJsTimeoutReportData Data { get; set; }
+
+}

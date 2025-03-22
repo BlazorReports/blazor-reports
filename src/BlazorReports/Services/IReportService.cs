@@ -23,7 +23,13 @@ public interface IReportService
   /// <typeparam name="TD"> The type of data to use in the report </typeparam>
   /// <returns> The generated report </returns>
   ValueTask<
-    OneOf<Success, ServerBusyProblem, OperationCancelledProblem, BrowserProblem>
+    OneOf<
+      Success,
+      ServerBusyProblem,
+      OperationCancelledProblem,
+      BrowserProblem,
+      JavascriptTimedoutProblem
+    >
   > GenerateReport<T, TD>(
     PipeWriter pipeWriter,
     BlazorReport report,
@@ -43,7 +49,13 @@ public interface IReportService
   /// <typeparam name="T"> The type of data to use in the report </typeparam>
   /// <returns> The generated report </returns>
   ValueTask<
-    OneOf<Success, ServerBusyProblem, OperationCancelledProblem, BrowserProblem>
+    OneOf<
+      Success,
+      ServerBusyProblem,
+      OperationCancelledProblem,
+      BrowserProblem,
+      JavascriptTimedoutProblem
+    >
   > GenerateReport<T>(
     PipeWriter pipeWriter,
     BlazorReport blazorReport,
@@ -60,7 +72,13 @@ public interface IReportService
   /// <param name="cancellationToken"> The cancellation token </param>
   /// <returns> The generated report </returns>
   ValueTask<
-    OneOf<Success, ServerBusyProblem, OperationCancelledProblem, BrowserProblem>
+    OneOf<
+      Success,
+      ServerBusyProblem,
+      OperationCancelledProblem,
+      BrowserProblem,
+      JavascriptTimedoutProblem
+    >
   > GenerateReport(
     PipeWriter pipeWriter,
     BlazorReport blazorReport,

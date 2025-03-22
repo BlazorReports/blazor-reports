@@ -21,7 +21,13 @@ public interface IBrowserService
   /// <param name="cancellationToken"> The cancellation token </param>
   /// <returns> The result of the operation </returns>
   ValueTask<
-    OneOf<Success, ServerBusyProblem, OperationCancelledProblem, BrowserProblem>
+    OneOf<
+      Success,
+      ServerBusyProblem,
+      OperationCancelledProblem,
+      BrowserProblem,
+      JavascriptTimedoutProblem
+    >
   > GenerateReport(
     PipeWriter pipeWriter,
     string html,
