@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using System.Runtime.InteropServices;
 using BlazorReports.Models;
 using BlazorReports.Services.BrowserServices.Helpers;
 using BlazorReports.Services.BrowserServices.Logs;
@@ -5,8 +7,6 @@ using BlazorReports.Services.BrowserServices.Problems;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using OneOf;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
 
 namespace BlazorReports.Services.BrowserServices.Factories;
 

@@ -1,13 +1,13 @@
+using System.Buffers;
+using System.IO.Pipelines;
+using System.Security.Cryptography;
+using System.Text;
 using BlazorReports.Enums;
 using BlazorReports.Models;
 using BlazorReports.Services.BrowserServices.Logs;
 using BlazorReports.Services.BrowserServices.Requests;
 using BlazorReports.Services.BrowserServices.Responses;
 using Microsoft.Extensions.Logging;
-using System.Buffers;
-using System.IO.Pipelines;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace BlazorReports.Services.BrowserServices;
 

@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace BlazorReports.Services.BrowserServices.Responses;
+
 /// <summary>
 /// Response returned from the "Runtime.evaluate" DevTools command
 /// </summary>
@@ -9,9 +10,10 @@ namespace BlazorReports.Services.BrowserServices.Responses;
 /// <param name="ExceptionDetails">Details about any exception thrown in JS</param>
 /// <param name="WasThrown">Whether an exception was thrown</param>
 public sealed record RuntimeEvaluateResponse(
-    [property: JsonPropertyName("result")] RuntimeEvaluateResult? Result,
-    [property: JsonPropertyName("exceptionDetails")] RuntimeEvaluateExceptionDetails? ExceptionDetails,
-    [property: JsonPropertyName("wasThrown")] bool WasThrown
+  [property: JsonPropertyName("result")] RuntimeEvaluateResult? Result,
+  [property: JsonPropertyName("exceptionDetails")]
+    RuntimeEvaluateExceptionDetails? ExceptionDetails,
+  [property: JsonPropertyName("wasThrown")] bool WasThrown
 );
 
 /// <summary>
@@ -21,9 +23,9 @@ public sealed record RuntimeEvaluateResponse(
 /// <param name="Value">The raw JSON value (if <c>returnByValue</c> was used)</param>
 /// <param name="Description">A textual description (especially for objects/functions)</param>
 public sealed record RuntimeEvaluateResult(
-    [property: JsonPropertyName("type")] string? Type,
-    [property: JsonPropertyName("value")] JsonElement? Value,
-    [property: JsonPropertyName("description")] string? Description
+  [property: JsonPropertyName("type")] string? Type,
+  [property: JsonPropertyName("value")] JsonElement? Value,
+  [property: JsonPropertyName("description")] string? Description
 );
 
 /// <summary>
@@ -31,7 +33,7 @@ public sealed record RuntimeEvaluateResult(
 /// </summary>
 /// <param name="Text">The error message text</param>
 public sealed record RuntimeEvaluateExceptionDetails(
-    [property: JsonPropertyName("text")] string? Text
+  [property: JsonPropertyName("text")] string? Text
 );
 
 /// <summary>

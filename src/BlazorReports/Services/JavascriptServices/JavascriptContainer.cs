@@ -1,7 +1,8 @@
-using Microsoft.AspNetCore.Hosting;
 using System.Text;
+using Microsoft.AspNetCore.Hosting;
 
 namespace BlazorReports.Services.JavascriptServices;
+
 internal sealed class JavascriptContainer
 {
   /// <summary>
@@ -40,5 +41,4 @@ internal sealed class JavascriptContainer
       }
     }
   }
-
 }
