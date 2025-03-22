@@ -17,6 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="HtmlAgilityPack" />
     <PackageReference Include="OneOf" VersionOverride="3.*" />
   </ItemGroup>
 

@@ -28,7 +28,8 @@ public interface IReportService
       ServerBusyProblem,
       OperationCancelledProblem,
       BrowserProblem,
-      JavascriptTimedoutProblem
+      JavascriptTimedoutProblem,
+      ReportIsNotCompletingSignal
     >
   > GenerateReport<T, TD>(
     PipeWriter pipeWriter,
@@ -54,7 +55,8 @@ public interface IReportService
       ServerBusyProblem,
       OperationCancelledProblem,
       BrowserProblem,
-      JavascriptTimedoutProblem
+      JavascriptTimedoutProblem,
+      ReportIsNotCompletingSignal
     >
   > GenerateReport<T>(
     PipeWriter pipeWriter,
@@ -77,7 +79,8 @@ public interface IReportService
       ServerBusyProblem,
       OperationCancelledProblem,
       BrowserProblem,
-      JavascriptTimedoutProblem
+      JavascriptTimedoutProblem,
+      ReportIsNotCompletingSignal
     >
   > GenerateReport(
     PipeWriter pipeWriter,

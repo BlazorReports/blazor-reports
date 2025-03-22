@@ -57,7 +57,8 @@ internal sealed class BrowserService : IAsyncDisposable, IBrowserService
       ServerBusyProblem,
       OperationCancelledProblem,
       BrowserProblem,
-      JavascriptTimedoutProblem
+      JavascriptTimedoutProblem,
+      ReportIsNotCompletingSignal
     >
   > GenerateReport(
     PipeWriter pipeWriter,

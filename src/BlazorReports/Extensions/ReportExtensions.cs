@@ -111,7 +111,8 @@ public static class ReportExtensions
             _ => StatusCodes.Status503ServiceUnavailable,
             _ => StatusCodes.Status499ClientClosedRequest,
             _ => StatusCodes.Status500InternalServerError,
-            _ => StatusCodes.Status408RequestTimeout
+            _ => StatusCodes.Status408RequestTimeout,
+            _ => StatusCodes.Status500InternalServerError
           );
 
           if (errorStatusCode is not null)
@@ -177,7 +178,8 @@ public static class ReportExtensions
             _ => StatusCodes.Status503ServiceUnavailable,
             _ => StatusCodes.Status499ClientClosedRequest,
             _ => StatusCodes.Status500InternalServerError,
-            _ => StatusCodes.Status408RequestTimeout
+            _ => StatusCodes.Status408RequestTimeout,
+            _ => StatusCodes.Status500InternalServerError
           );
 
           if (errorStatusCode is not null)

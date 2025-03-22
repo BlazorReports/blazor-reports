@@ -7,6 +7,7 @@ using BlazorReports.Services.BrowserServices.Logs;
 using BlazorReports.Services.BrowserServices.Problems;
 using BlazorReports.Services.BrowserServices.Requests;
 using BlazorReports.Services.BrowserServices.Responses;
+using BlazorReports.Services.HtmlServices.Helpers;
 using Microsoft.Extensions.Logging;
 using OneOf;
 using OneOf.Types;
@@ -36,7 +37,8 @@ internal sealed class Browser(
       ServerBusyProblem,
       OperationCancelledProblem,
       BrowserProblem,
-      JavascriptTimedoutProblem
+      JavascriptTimedoutProblem,
+      ReportIsNotCompletingSignal
     >
   > GenerateReport(
     PipeWriter pipeWriter,
@@ -106,6 +108,14 @@ internal sealed class Browser(
         await browserPage.DisplayHtml(html, cancellationToken);
         if (shouldReportAwaitJavascript)
         {
+          var isReportCompletingSignal = HtmlParserHelper.IsUsingMethodInScripts(
+            html,
+            "completed",
+            "default-server-script"
+          );
+          if (!isReportCompletingSignal)
+            return new ReportIsNotCompletingSignal();
+
           TimeSpan globalTimeout = globalJavascriptSettings.WaitForCompletedSignalTimeout;
           TimeSpan? currentReportTimeout =
             currentReportJavascriptSettings.WaitForCompletedSignalTimeout;
