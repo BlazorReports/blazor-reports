@@ -33,6 +33,7 @@ public sealed class ReportService(
   /// Generates a report using the specified component and data
   /// </summary>
   /// <param name="pipeWriter"> The pipe writer to write the report to </param>
+  /// <param name="report"> The report to generate </param>
   /// <param name="data"> The data to use in the report </param>
   /// <param name="cancellationToken"> The cancellation token </param>
   /// <typeparam name="T"> The component to use in the report </typeparam>
@@ -42,6 +43,7 @@ public sealed class ReportService(
     OneOf<Success, ServerBusyProblem, OperationCancelledProblem, BrowserProblem>
   > GenerateReport<T, TD>(
     PipeWriter pipeWriter,
+    BlazorReport report,
     TD data,
     CancellationToken cancellationToken = default
   )
@@ -76,6 +78,7 @@ public sealed class ReportService(
       pipeWriter,
       html,
       reportRegistry.DefaultPageSettings,
+      report.CurrentReportJavascriptSettings,
       cancellationToken
     );
   }
@@ -103,7 +106,7 @@ public sealed class ReportService(
     var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
     var javascriptContainer = scope.ServiceProvider.GetRequiredService<JavascriptContainer>();
     var options = scope.ServiceProvider.GetRequiredService<IOptions<BlazorReportsOptions>>();
-    var javascriptInternalSettings = options.Value.JavascriptInternalSettings;
+    var javascriptInternalSettings = options.Value.GlobalJavascriptSettings;
 
     var baseStyles = string.Empty;
     if (!string.IsNullOrEmpty(blazorReport.BaseStyles))
@@ -143,38 +146,57 @@ public sealed class ReportService(
     {
       baseComponentParameters.Add("Scripts", javascriptContainer.Scripts);
     }
-
-
-    baseComponentParameters.Add("ReportIsReadySignal", javascriptInternalSettings.ReportIsReadySignal);
-    baseComponentParameters.Add("ChildComponentType", blazorReport.Component);
-    baseComponentParameters.Add("ChildComponentParameters", childComponentParameters);
-
-    await using HtmlRenderer htmlRenderer = new(scope.ServiceProvider, loggerFactory);
-
-    if (blazorReport.OutputFormat == ReportOutputFormat.Pdf)
+    //Checks if the report has a custom signal if not use the global one
+    if (blazorReport.CurrentReportJavascriptSettings.ReportIsReadySignal is not null)
     {
-      var html = await htmlRenderer.Dispatcher.InvokeAsync(async () =>
-      {
-        ParameterView parameters = ParameterView.FromDictionary(baseComponentParameters);
-        var output = await htmlRenderer.RenderComponentAsync<BlazorReportsTemplate>(parameters);
-        return output.ToHtmlString();
-      });
-
-      var pageSettings = blazorReport.PageSettings ?? reportRegistry.DefaultPageSettings;
-
-      return await browserService.GenerateReport(pipeWriter, html, pageSettings, cancellationToken);
+      baseComponentParameters.Add(
+        "ReportIsReadySignal",
+        blazorReport.CurrentReportJavascriptSettings.ReportIsReadySignal
+      );
     }
     else
     {
-      var html = await htmlRenderer.Dispatcher.InvokeAsync(async () =>
-      {
-        ParameterView parameters = ParameterView.FromDictionary(baseComponentParameters);
-        var output = await htmlRenderer.RenderComponentAsync<BlazorReportsTemplate>(parameters);
-        return output.ToHtmlString();
-      });
+      baseComponentParameters.Add(
+      "ReportIsReadySignal",
+      javascriptInternalSettings.ReportIsReadySignal
+    );
 
-      await pipeWriter.WriteAsync(System.Text.Encoding.UTF8.GetBytes(html), cancellationToken);
-      return new Success();
+      baseComponentParameters.Add("ChildComponentType", blazorReport.Component);
+      baseComponentParameters.Add("ChildComponentParameters", childComponentParameters);
+
+      await using HtmlRenderer htmlRenderer = new(scope.ServiceProvider, loggerFactory);
+
+      if (blazorReport.OutputFormat == ReportOutputFormat.Pdf)
+      {
+        var html = await htmlRenderer.Dispatcher.InvokeAsync(async () =>
+        {
+          ParameterView parameters = ParameterView.FromDictionary(baseComponentParameters);
+          var output = await htmlRenderer.RenderComponentAsync<BlazorReportsTemplate>(parameters);
+          return output.ToHtmlString();
+        });
+
+        var pageSettings = blazorReport.PageSettings ?? reportRegistry.DefaultPageSettings;
+
+        return await browserService.GenerateReport(
+          pipeWriter,
+          html,
+          pageSettings,
+          blazorReport.CurrentReportJavascriptSettings,
+          cancellationToken
+        );
+      }
+      else
+      {
+        var html = await htmlRenderer.Dispatcher.InvokeAsync(async () =>
+        {
+          ParameterView parameters = ParameterView.FromDictionary(baseComponentParameters);
+          var output = await htmlRenderer.RenderComponentAsync<BlazorReportsTemplate>(parameters);
+          return output.ToHtmlString();
+        });
+
+        await pipeWriter.WriteAsync(System.Text.Encoding.UTF8.GetBytes(html), cancellationToken);
+        return new Success();
+      }
     }
   }
 

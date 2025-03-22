@@ -21,7 +21,7 @@ internal sealed class Browser(
   DirectoryInfo dataDirectory,
   Connection connection,
   BlazorReportsBrowserOptions browserOptions,
-  BlazorReportJavascriptSettings javascriptSettings,
+  BlazorReportGlobalJavascriptSettings globalJavascriptSettings,
   ILogger logger,
   IBrowserPageFactory browserPageFactory
 ) : IAsyncDisposable
@@ -36,6 +36,7 @@ internal sealed class Browser(
     PipeWriter pipeWriter,
     string html,
     BlazorReportsPageSettings pageSettings,
+    BlazorReportCurrentReportJavascriptSettings currentReportJavascriptSettings,
     CancellationToken cancellationToken
   )
   {
@@ -92,19 +93,20 @@ internal sealed class Browser(
 
       try
       {
-        var reportIsReadyFlagName = javascriptSettings.ReportIsReadySignal;
-        await browserPage.DisplayHtml(html, cancellationToken);
-        var reportIsReadyFlagHasBeenSet = await browserPage.DoesJsFlagExistAsync(
-          reportIsReadyFlagName,
-          cancellationToken
-        );
+        var shouldReportAwaitJavascript =
+          currentReportJavascriptSettings.WaitForJavascriptCompletedSignal
+          || globalJavascriptSettings.WaitForJavascriptCompletedSignal;
 
-        if (reportIsReadyFlagHasBeenSet)
+        await browserPage.DisplayHtml(html, cancellationToken);
+        if (shouldReportAwaitJavascript)
         {
-          await browserPage.WaitForJsFlagAsync(
-            javascriptSettings.ReportTimeout,
-            cancellationToken
-          );
+          TimeSpan globalTimeout = globalJavascriptSettings.WaitForCompletedSignalTimeout;
+          TimeSpan? currentReportTimeout =
+            currentReportJavascriptSettings.WaitForCompletedSignalTimeout;
+
+          TimeSpan timeout = currentReportTimeout ?? globalTimeout;
+
+          await browserPage.WaitForJsFlagAsync(timeout, cancellationToken);
         }
 
         await browserPage.ConvertPageToPdf(pipeWriter, pageSettings, cancellationToken);

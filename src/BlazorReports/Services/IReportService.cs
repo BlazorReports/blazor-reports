@@ -17,6 +17,7 @@ public interface IReportService
   /// </summary>
   /// <param name="pipeWriter"> The pipe writer to write the report to </param>
   /// <param name="data"> The data to use in the report </param>
+  /// <param name="report"> The report to generate </param>
   /// <param name="cancellationToken"> The cancellation token </param>
   /// <typeparam name="T"> The component to use in the report </typeparam>
   /// <typeparam name="TD"> The type of data to use in the report </typeparam>
@@ -25,6 +26,7 @@ public interface IReportService
     OneOf<Success, ServerBusyProblem, OperationCancelledProblem, BrowserProblem>
   > GenerateReport<T, TD>(
     PipeWriter pipeWriter,
+    BlazorReport report,
     TD data,
     CancellationToken cancellationToken = default
   )

@@ -1,4 +1,3 @@
-blazorReport.notReady(); // Set initial state to "not ready"
 
 var element = document.getElementById("HelloWorld");
 
@@ -7,8 +6,9 @@ if (element) {
   element.innerHTML = "Hello from JavaScript";
 }
 
-// After 2 seconds, set the report as ready using async/await inside a self-invoking function
-(async () => {
-  await new Promise(resolve => setTimeout(resolve, 4000));
+//after 5 seconds complete the report with blazorReport.completed(); // Mark report as ready
+
+setTimeout(() => {
   blazorReport.completed(); // Mark report as ready
-})();
+}, 5_000)
+

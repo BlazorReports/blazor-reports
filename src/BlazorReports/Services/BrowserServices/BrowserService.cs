@@ -48,6 +48,7 @@ internal sealed class BrowserService : IAsyncDisposable, IBrowserService
   /// <param name="pipeWriter"> The pipe writer to write the report to </param>
   /// <param name="html"> The HTML to use in the report </param>
   /// <param name="pageSettings"> The page settings to use in the report </param>
+  /// <param name="currentReportJavascriptSettings"> The current report javascript settings </param>
   /// <param name="cancellationToken"> The cancellation token </param>
   /// <returns> The result of the operation </returns>
   public async ValueTask<
@@ -56,6 +57,7 @@ internal sealed class BrowserService : IAsyncDisposable, IBrowserService
     PipeWriter pipeWriter,
     string html,
     BlazorReportsPageSettings pageSettings,
+    BlazorReportCurrentReportJavascriptSettings currentReportJavascriptSettings,
     CancellationToken cancellationToken
   )
   {
@@ -80,7 +82,13 @@ internal sealed class BrowserService : IAsyncDisposable, IBrowserService
       return browserStartProblem;
     }
 
-    return await browser.GenerateReport(pipeWriter, html, pageSettings, cancellationToken);
+    return await browser.GenerateReport(
+      pipeWriter,
+      html,
+      pageSettings,
+      currentReportJavascriptSettings,
+      cancellationToken
+    );
   }
 
   /// <summary>

@@ -85,6 +85,8 @@ public class BlazorReportRegistry
       Component = typeof(T),
       Data = null,
       PageSettings = options?.PageSettings,
+      CurrentReportJavascriptSettings =
+        options?.JavascriptSettings! ?? BlazorReportCurrentReportJavascriptSettings.Default,
     };
     if (!string.IsNullOrEmpty(options?.BaseStylesPath))
     {
@@ -137,6 +139,8 @@ public class BlazorReportRegistry
       Component = typeof(T),
       Data = typeof(TD),
       PageSettings = options?.PageSettings,
+      CurrentReportJavascriptSettings =
+        options?.JavascriptSettings ?? BlazorReportCurrentReportJavascriptSettings.Default,
     };
     if (!string.IsNullOrEmpty(options?.BaseStylesPath))
     {

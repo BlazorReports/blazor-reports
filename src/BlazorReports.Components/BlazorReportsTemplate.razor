@@ -7,15 +7,14 @@
         class BlazorReport {
             constructor(signalName) {
                 this.signalName = signalName;
-                this.ready(); // Set it to false initially
             }
-
+            
             notReady() {
-                window[this.signalName] = false;
+                window[this.signalName] = "not-ready";
             }
 
             completed() {
-                window[this.signalName] = true;
+                window[this.signalName] = "ready";
             }
         }
 
@@ -23,12 +22,13 @@
         window.blazorReport = new BlazorReport("@ReportIsReadySignal");
 
                 // Function to wait for signal change
-        window.waitForSignal = (expectedValue = 'ready', timeoutMs = 5000, intervalMs = 50) => {
+        window.waitForSignal = (timeoutMs = 5000, intervalMs = 50) => {
+          var expectedValue = 'ready'
           return new Promise((resolve, reject) => {
             const start = Date.now();
 
             const check = () => {
-              if (window.reportSignal === expectedValue) {
+              if (window["@ReportIsReadySignal"] === expectedValue) {
                 clearInterval(interval);
                 resolve('Signal received');
               } else if (Date.now() - start > timeoutMs) {
@@ -85,4 +85,6 @@
     /// </summary>
     [Parameter]
     public string ReportIsReadySignal { get; set; } = "reportIsReady";
+
+
 }

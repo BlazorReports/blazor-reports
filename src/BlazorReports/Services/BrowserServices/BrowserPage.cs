@@ -112,7 +112,7 @@ internal sealed class BrowserPage(
   /// <returns></returns>
   internal async Task<bool> WaitForJsFlagAsync(TimeSpan timeout, CancellationToken stoppingToken)
   {
-    string script = $"waitForSignal('ready', {timeout.TotalMilliseconds})";
+    string script = $"waitForSignal({timeout.TotalMilliseconds})";
 
     var result = await EvaluateJavaScriptAsync(script, stoppingToken);
 
@@ -168,7 +168,7 @@ internal sealed class BrowserPage(
     var evaluateMessage = new BrowserMessage("Runtime.evaluate");
     evaluateMessage.Parameters.Add("expression", script);
     evaluateMessage.Parameters.Add("returnByValue", true);
-    evaluateMessage.Parameters.Add("awaitPromise", true); // ✅ Ensures JS Promises resolve
+    evaluateMessage.Parameters.Add("awaitPromise", true); 
 
     string? evaluatedValue = null;
 
