@@ -1,6 +1,3 @@
-using System.Collections.Concurrent;
-using System.Diagnostics;
-using System.IO.Pipelines;
 using BlazorReports.Models;
 using BlazorReports.Services.BrowserServices.Factories;
 using BlazorReports.Services.BrowserServices.Logs;
@@ -10,6 +7,9 @@ using BlazorReports.Services.BrowserServices.Responses;
 using Microsoft.Extensions.Logging;
 using OneOf;
 using OneOf.Types;
+using System.Collections.Concurrent;
+using System.Diagnostics;
+using System.IO.Pipelines;
 
 namespace BlazorReports.Services.BrowserServices;
 

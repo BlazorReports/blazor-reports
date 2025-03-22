@@ -1,5 +1,5 @@
-using System.Text.Json.Serialization;
 using BlazorReports.Services.BrowserServices.Types;
+using System.Text.Json.Serialization;
 
 namespace BlazorReports.Services.BrowserServices.Responses;
 

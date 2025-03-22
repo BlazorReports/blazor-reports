@@ -1,5 +1,3 @@
-using System.Diagnostics;
-using System.Runtime.InteropServices;
 using BlazorReports.Models;
 using BlazorReports.Services.BrowserServices.Helpers;
 using BlazorReports.Services.BrowserServices.Logs;
@@ -7,6 +5,8 @@ using BlazorReports.Services.BrowserServices.Problems;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using OneOf;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace BlazorReports.Services.BrowserServices.Factories;
 
@@ -30,7 +30,7 @@ internal sealed class BrowserFactory(
   public async ValueTask<OneOf<Browser, BrowserProblem>> CreateBrowser()
   {
     var browserOptions = options.Value.BrowserOptions;
-    var javascriptSettings = options.Value.GlobalJavascriptSettings;
+    var globalJavascriptSettings = options.Value.GlobalJavascriptSettings;
     var browserExecutableLocation = browserOptions.BrowserExecutableLocation is not null
       ? browserOptions.BrowserExecutableLocation.FullName
       : BrowserFinder.Find(browserOptions.Browser);
@@ -93,7 +93,7 @@ internal sealed class BrowserFactory(
       devToolsActivePortDirectory,
       connection,
       browserOptions,
-      javascriptSettings,
+      globalJavascriptSettings,
       browserLogger,
       browserPageFactory
     );

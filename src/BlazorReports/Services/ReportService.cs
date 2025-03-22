@@ -1,4 +1,3 @@
-using System.IO.Pipelines;
 using BlazorReports.Components;
 using BlazorReports.Models;
 using BlazorReports.Services.BrowserServices;
@@ -11,6 +10,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using OneOf;
 using OneOf.Types;
+using System.IO.Pipelines;
 
 namespace BlazorReports.Services;
 
