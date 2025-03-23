@@ -7,7 +7,7 @@
       element.innerHTML = "<h1>Hello from JavaScript</h1>";
     }
 
-
+    // Call the globally defined blazorReport.completed() to let BlazorReports know the report's contents have finished generating.
     setTimeout(() => {
       blazorReport.completed();
     }, @Data.TimeSpan.TotalMilliseconds)
