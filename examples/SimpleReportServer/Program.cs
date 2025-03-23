@@ -22,7 +22,6 @@ var reportsGroup = app.MapGroup("reports");
 
 reportsGroup.MapBlazorReport<SimpleJsAsyncReport, SimpleJsAsyncReportData>(opts =>
 {
-  opts.OutputFormat = ReportOutputFormat.Pdf;
   opts.JavascriptSettings.WaitForJavascriptCompletedSignal = true;
   opts.JavascriptSettings.WaitForCompletedSignalTimeout = TimeSpan.FromSeconds(5);
 });
