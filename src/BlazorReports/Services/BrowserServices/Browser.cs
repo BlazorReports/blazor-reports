@@ -99,11 +99,10 @@ internal sealed class Browser(
 
       try
       {
+        await browserPage.DisplayHtml(html, cancellationToken);
         var shouldReportAwaitJavascript =
           currentReportJavascriptSettings.WaitForJavascriptCompletedSignal
           || globalJavascriptSettings.WaitForJavascriptCompletedSignal;
-
-        await browserPage.DisplayHtml(html, cancellationToken);
         if (shouldReportAwaitJavascript)
         {
           TimeSpan globalTimeout = globalJavascriptSettings.WaitForCompletedSignalTimeout;
