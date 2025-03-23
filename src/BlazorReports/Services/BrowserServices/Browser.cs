@@ -21,6 +21,7 @@ internal sealed class Browser(
   DirectoryInfo dataDirectory,
   Connection connection,
   BlazorReportsBrowserOptions browserOptions,
+  BlazorReportGlobalJavascriptSettings globalJavascriptSettings,
   ILogger logger,
   IBrowserPageFactory browserPageFactory
 ) : IAsyncDisposable
@@ -30,11 +31,18 @@ internal sealed class Browser(
   private readonly SemaphoreSlim _poolLock = new(1, 1);
 
   public async ValueTask<
-    OneOf<Success, ServerBusyProblem, OperationCancelledProblem, BrowserProblem>
+    OneOf<
+      Success,
+      ServerBusyProblem,
+      OperationCancelledProblem,
+      BrowserProblem,
+      CompletedSignalTimeoutProblem
+    >
   > GenerateReport(
     PipeWriter pipeWriter,
     string html,
     BlazorReportsPageSettings pageSettings,
+    BlazorReportCurrentReportJavascriptSettings currentReportJavascriptSettings,
     CancellationToken cancellationToken
   )
   {
@@ -92,6 +100,24 @@ internal sealed class Browser(
       try
       {
         await browserPage.DisplayHtml(html, cancellationToken);
+        var shouldReportAwaitJavascript =
+          currentReportJavascriptSettings.WaitForJavascriptCompletedSignal
+          || globalJavascriptSettings.WaitForJavascriptCompletedSignal;
+        if (shouldReportAwaitJavascript)
+        {
+          TimeSpan globalTimeout = globalJavascriptSettings.WaitForCompletedSignalTimeout;
+          TimeSpan? currentReportTimeout =
+            currentReportJavascriptSettings.WaitForCompletedSignalTimeout;
+
+          TimeSpan timeout = currentReportTimeout ?? globalTimeout;
+
+          var didNotHitTimeOut = await browserPage.WaitForJsFlagAsync(timeout, cancellationToken);
+          if (!didNotHitTimeOut)
+          {
+            return new CompletedSignalTimeoutProblem();
+          }
+        }
+
         await browserPage.ConvertPageToPdf(pipeWriter, pageSettings, cancellationToken);
       }
       catch (Exception e)

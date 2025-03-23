@@ -110,7 +110,8 @@ public static class ReportExtensions
             _ => (int?)null,
             _ => StatusCodes.Status503ServiceUnavailable,
             _ => StatusCodes.Status499ClientClosedRequest,
-            _ => StatusCodes.Status500InternalServerError
+            _ => StatusCodes.Status500InternalServerError,
+            _ => StatusCodes.Status408RequestTimeout
           );
 
           if (errorStatusCode is not null)
@@ -121,6 +122,7 @@ public static class ReportExtensions
         }
       )
       .Produces<FileStreamHttpResult>(200, blazorReport.GetContentType())
+      .Produces(StatusCodes.Status408RequestTimeout)
       .Produces(StatusCodes.Status503ServiceUnavailable);
   }
 
@@ -174,7 +176,8 @@ public static class ReportExtensions
             _ => (int?)null,
             _ => StatusCodes.Status503ServiceUnavailable,
             _ => StatusCodes.Status499ClientClosedRequest,
-            _ => StatusCodes.Status500InternalServerError
+            _ => StatusCodes.Status500InternalServerError,
+            _ => StatusCodes.Status408RequestTimeout
           );
 
           if (errorStatusCode is not null)
@@ -185,6 +188,7 @@ public static class ReportExtensions
         }
       )
       .Produces<FileStreamHttpResult>(200, blazorReport.GetContentType())
+      .Produces(StatusCodes.Status408RequestTimeout)
       .Produces(StatusCodes.Status503ServiceUnavailable);
   }
 

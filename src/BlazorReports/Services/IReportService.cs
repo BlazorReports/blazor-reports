@@ -17,14 +17,22 @@ public interface IReportService
   /// </summary>
   /// <param name="pipeWriter"> The pipe writer to write the report to </param>
   /// <param name="data"> The data to use in the report </param>
+  /// <param name="report"> The report to generate </param>
   /// <param name="cancellationToken"> The cancellation token </param>
   /// <typeparam name="T"> The component to use in the report </typeparam>
   /// <typeparam name="TD"> The type of data to use in the report </typeparam>
   /// <returns> The generated report </returns>
   ValueTask<
-    OneOf<Success, ServerBusyProblem, OperationCancelledProblem, BrowserProblem>
+    OneOf<
+      Success,
+      ServerBusyProblem,
+      OperationCancelledProblem,
+      BrowserProblem,
+      CompletedSignalTimeoutProblem
+    >
   > GenerateReport<T, TD>(
     PipeWriter pipeWriter,
+    BlazorReport report,
     TD data,
     CancellationToken cancellationToken = default
   )
@@ -41,7 +49,13 @@ public interface IReportService
   /// <typeparam name="T"> The type of data to use in the report </typeparam>
   /// <returns> The generated report </returns>
   ValueTask<
-    OneOf<Success, ServerBusyProblem, OperationCancelledProblem, BrowserProblem>
+    OneOf<
+      Success,
+      ServerBusyProblem,
+      OperationCancelledProblem,
+      BrowserProblem,
+      CompletedSignalTimeoutProblem
+    >
   > GenerateReport<T>(
     PipeWriter pipeWriter,
     BlazorReport blazorReport,
@@ -58,7 +72,13 @@ public interface IReportService
   /// <param name="cancellationToken"> The cancellation token </param>
   /// <returns> The generated report </returns>
   ValueTask<
-    OneOf<Success, ServerBusyProblem, OperationCancelledProblem, BrowserProblem>
+    OneOf<
+      Success,
+      ServerBusyProblem,
+      OperationCancelledProblem,
+      BrowserProblem,
+      CompletedSignalTimeoutProblem
+    >
   > GenerateReport(
     PipeWriter pipeWriter,
     BlazorReport blazorReport,
