@@ -20,7 +20,7 @@ if (app.Environment.IsDevelopment())
 
 var reportsGroup = app.MapGroup("reports");
 
-reportsGroup.MapBlazorReport<SimpleJsTimeoutReport, SimpleJsTimeoutReportData>(opts =>
+reportsGroup.MapBlazorReport<SimpleJsAsyncReport, SimpleJsAsyncReportData>(opts =>
 {
   opts.ReportName = "HelloReportPdf";
   opts.OutputFormat = ReportOutputFormat.Pdf;
