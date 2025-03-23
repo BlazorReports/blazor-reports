@@ -86,7 +86,7 @@ public class BlazorReportRegistry
       Data = null,
       PageSettings = options?.PageSettings,
       CurrentReportJavascriptSettings =
-        options?.JavascriptSettings! ?? BlazorReportCurrentReportJavascriptSettings.Default,
+        options?.JavascriptSettings ?? BlazorReportCurrentReportJavascriptSettings.Default,
     };
     if (!string.IsNullOrEmpty(options?.BaseStylesPath))
     {
