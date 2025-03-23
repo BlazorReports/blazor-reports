@@ -8,12 +8,7 @@ var builder = WebApplication.CreateSlimBuilder(args);
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddBlazorReports(options =>
-{
-  options.GlobalJavascriptSettings.WaitForCompletedSignalTimeout = TimeSpan.FromSeconds(3);
-  options.GlobalJavascriptSettings.WaitForJavascriptCompletedSignal = false;
-  options.BrowserOptions.Browser = BlazorReports.Services.BrowserServices.Browsers.Edge;
-});
+builder.Services.AddBlazorReports();
 
 var app = builder.Build();
 
