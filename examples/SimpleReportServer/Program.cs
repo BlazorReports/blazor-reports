@@ -23,7 +23,6 @@ var reportsGroup = app.MapGroup("reports");
 reportsGroup.MapBlazorReport<SimpleJsAsyncReport, SimpleJsAsyncReportData>(opts =>
 {
   opts.JavascriptSettings.WaitForJavascriptCompletedSignal = true;
-  opts.JavascriptSettings.WaitForCompletedSignalTimeout = TimeSpan.FromSeconds(5);
 });
 reportsGroup.MapBlazorReport<HelloReport, HelloReportData>();
 reportsGroup.MapBlazorReport<HelloReport, HelloReportData>(opts =>
