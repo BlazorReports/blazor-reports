@@ -36,7 +36,7 @@ internal sealed class Browser(
       ServerBusyProblem,
       OperationCancelledProblem,
       BrowserProblem,
-      JavascriptTimedoutProblem
+      CompletedSignalTimeoutProblem
     >
   > GenerateReport(
     PipeWriter pipeWriter,
@@ -114,7 +114,7 @@ internal sealed class Browser(
           var didNotHitTimeOut = await browserPage.WaitForJsFlagAsync(timeout, cancellationToken);
           if (!didNotHitTimeOut)
           {
-            return new JavascriptTimedoutProblem();
+            return new CompletedSignalTimeoutProblem();
           }
         }
 

@@ -26,7 +26,7 @@ public interface IBrowserService
       ServerBusyProblem,
       OperationCancelledProblem,
       BrowserProblem,
-      JavascriptTimedoutProblem
+      CompletedSignalTimeoutProblem
     >
   > GenerateReport(
     PipeWriter pipeWriter,

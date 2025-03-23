@@ -45,7 +45,7 @@ public sealed class ReportService(
       ServerBusyProblem,
       OperationCancelledProblem,
       BrowserProblem,
-      JavascriptTimedoutProblem
+      CompletedSignalTimeoutProblem
     >
   > GenerateReport<T, TD>(
     PipeWriter pipeWriter,
@@ -104,7 +104,7 @@ public sealed class ReportService(
       ServerBusyProblem,
       OperationCancelledProblem,
       BrowserProblem,
-      JavascriptTimedoutProblem
+      CompletedSignalTimeoutProblem
     >
   > GenerateReport<T>(
     PipeWriter pipeWriter,
@@ -225,7 +225,7 @@ public sealed class ReportService(
       ServerBusyProblem,
       OperationCancelledProblem,
       BrowserProblem,
-      JavascriptTimedoutProblem
+      CompletedSignalTimeoutProblem
     >
   > GenerateReport(
     PipeWriter pipeWriter,
