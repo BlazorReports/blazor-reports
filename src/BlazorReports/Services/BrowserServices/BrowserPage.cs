@@ -148,45 +148,6 @@ internal sealed class BrowserPage(
     message.Parameters.Add("marginLeft", pageSettings.MarginLeft);
     message.Parameters.Add("marginRight", pageSettings.MarginRight);
     message.Parameters.Add("printBackground", !pageSettings.IgnoreBackground);
-    message.Parameters.Add("displayHeaderFooter", true);
-    message.Parameters.Add(
-      "headerTemplate",
-      """
-      <style>
-        div:has(span.pageNumber:contains('1') {
-            background-color: lightcoral;
-            color: darkred;
-            padding: 10px;
-            border: 2px solid red;
-            font-size: 20px;
-        }
-      </style>
-
-      <div style="font-size: 12px; width: 100%; text-align: center;" class="print-header">
-
-      <span class="pageNumber"></span>
-
-      </div>
-      """
-    //       """
-    //       <div style="font-size: 12px; width: 100%; text-align: center;" class="print-header">
-    //         <script>
-    //           const pageNumberElement = document.querySelector('.pageNumber');
-    //           if (pageNumberElement) {
-    //             const pageNumber = parseInt(pageNumberElement.textContent, 10); // Parse the text content to an integer
-    //
-    //             // Check if the page number is odd
-    //             if (pageNumber % 2 !== 0) {
-    //               document.querySelector('.print-header').style.display = 'block'; // Show for odd page numbers
-    //             } else {
-    //               document.querySelector('.print-header').style.display = 'none';  // Hide for even page numbers
-    //             }
-    //           }
-    //         </script>
-    //         <span class="pageNumber"></span>
-    //       </div>
-    //       """
-    );
     message.Parameters.Add("transferMode", "ReturnAsStream");
 
     return message;
