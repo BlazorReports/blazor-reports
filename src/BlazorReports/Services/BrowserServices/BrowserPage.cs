@@ -70,6 +70,145 @@ internal sealed class BrowserPage(
     );
   }
 
+  /// <summary>
+  /// Checks if a JavaScript flag is set
+  /// </summary>
+  /// <param name="flagName">Flag to be checked</param>
+  /// <param name="stoppingToken">cancellation token</param>
+  /// <returns>Returns the flag current value</returns>
+  internal async Task<bool> CheckIfFlagIsSetAsync(
+    string flagName,
+    CancellationToken stoppingToken = default
+  )
+  {
+    await connection.ConnectAsync(stoppingToken);
+
+    BrowserMessage evaluateMessage = new("Runtime.evaluate");
+    evaluateMessage.Parameters.Add("expression", $"window.{flagName} === true");
+    evaluateMessage.Parameters.Add("returnByValue", true);
+    evaluateMessage.Parameters.Add("awaitPromise", true);
+
+    bool isFlagSet = false;
+
+    await connection.SendAsync(
+      evaluateMessage,
+      RuntimeEvaluateResponseSerializationContext
+        .Default
+        .BrowserResultResponseRuntimeEvaluateResponse,
+      evaluateResponse =>
+      {
+        if (!evaluateResponse.Result.WasThrown && evaluateResponse.Result.Result?.Type == "boolean")
+        {
+          isFlagSet = evaluateResponse.Result.Result?.Value?.GetBoolean() ?? false;
+        }
+      },
+      stoppingToken
+    );
+
+    return isFlagSet;
+  }
+
+  /// <summary>
+  /// Waits for a JavaScript flag to be set
+  /// </summary>
+  /// <param name="timeout"></param>
+  /// <param name="stoppingToken"></param>
+  /// <returns></returns>
+  internal async Task<bool> WaitForJsFlagAsync(TimeSpan timeout, CancellationToken stoppingToken)
+  {
+    string script = $"waitForSignal({timeout.TotalMilliseconds})";
+
+    var result = await EvaluateJavaScriptAsync(script, stoppingToken);
+
+    return result == "Signal received";
+  }
+
+  /// <summary>
+  /// Checks if a JavaScript flag exists
+  /// </summary>
+  /// <param name="flagName"></param>
+  /// <param name="stoppingToken"></param>
+  /// <returns></returns>
+  internal async Task<bool> DoesJsFlagExistAsync(
+    string flagName,
+    CancellationToken stoppingToken = default
+  )
+  {
+    await connection.ConnectAsync(stoppingToken);
+
+    // JavaScript Expression: Check if the flag exists in the window object
+    string jsCheck = $"typeof window.{flagName} !== 'undefined'";
+
+    BrowserMessage evaluateMessage = new("Runtime.evaluate");
+    evaluateMessage.Parameters.Add("expression", jsCheck);
+    evaluateMessage.Parameters.Add("returnByValue", true);
+    evaluateMessage.Parameters.Add("awaitPromise", true);
+
+    bool flagExists = false;
+
+    await connection.SendAsync(
+      evaluateMessage,
+      RuntimeEvaluateResponseSerializationContext
+        .Default
+        .BrowserResultResponseRuntimeEvaluateResponse,
+      evaluateResponse =>
+      {
+        // If JavaScript returns "true", it means the flag exists
+        if (evaluateResponse.Result.Result?.Type == "boolean")
+        {
+          flagExists = evaluateResponse.Result.Result?.Value?.GetBoolean() ?? false;
+        }
+      },
+      stoppingToken
+    );
+
+    return flagExists;
+  }
+
+  /// <summary>
+  /// Evaluates JavaScript code
+  /// </summary>
+  /// <param name="script"></param>
+  /// <param name="stoppingToken"></param>
+  /// <returns></returns>
+  internal async Task<string?> EvaluateJavaScriptAsync(
+    string script,
+    CancellationToken stoppingToken
+  )
+  {
+    var evaluateMessage = new BrowserMessage("Runtime.evaluate");
+    evaluateMessage.Parameters.Add("expression", script);
+    evaluateMessage.Parameters.Add("returnByValue", true);
+    evaluateMessage.Parameters.Add("awaitPromise", true);
+
+    string? evaluatedValue = null;
+
+    await connection.SendAsync(
+      evaluateMessage,
+      RuntimeEvaluateResponseSerializationContext
+        .Default
+        .BrowserResultResponseRuntimeEvaluateResponse,
+      evaluateResponse =>
+      {
+        if (
+          evaluateResponse.Result.WasThrown && evaluateResponse.Result.ExceptionDetails is not null
+        )
+        {
+          // Handle JS error
+          return;
+        }
+
+        if (evaluateResponse.Result.Result?.Type == "string")
+        {
+          evaluatedValue = evaluateResponse.Result.Result?.Value?.GetString();
+        }
+      },
+      stoppingToken
+    );
+
+    return evaluatedValue;
+  }
+
   internal async ValueTask ConvertPageToPdf(
     PipeWriter pipeWriter,
     BlazorReportsPageSettings pageSettings,

@@ -24,4 +24,9 @@ public class BlazorReportsOptions
   /// Settings for generating a PDF
   /// </summary>
   public BlazorReportsPageSettings PageSettings { get; set; } = new();
+
+  /// <summary>
+  /// Javascript api settings
+  /// </summary>
+  public BlazorReportGlobalJavascriptSettings GlobalJavascriptSettings { get; set; } = new();
 }

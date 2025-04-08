@@ -1,29 +1,90 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <style>@((MarkupString)BaseStyles)</style>
+    <style>@((MarkupString)BaseStyles)</style>
+    <script>
+        // Define BlazorReport class
+        class BlazorReport {
+            constructor(signalName) {
+                this.signalName = signalName;
+            }
+            
+            notReady() {
+                window[this.signalName] = "not-ready";
+            }
+
+            completed() {
+                window[this.signalName] = "ready";
+            }
+        }
+
+        // Create global instance with the provided signal name
+        window.blazorReport = new BlazorReport("@ReportIsReadySignal");
+
+                // Function to wait for signal change
+        window.waitForSignal = (timeoutMs = 5000, intervalMs = 50) => {
+          var expectedValue = 'ready'
+          return new Promise((resolve, reject) => {
+            const start = Date.now();
+
+            const check = () => {
+              if (window["@ReportIsReadySignal"] === expectedValue) {
+                clearInterval(interval);
+                resolve('Signal received');
+              } else if (Date.now() - start > timeoutMs) {
+                clearInterval(interval);
+                reject(new Error('Timeout waiting for signal'));
+              }
+            };
+
+            const interval = setInterval(check, intervalMs);
+            check(); // In case it's already ready
+          });
+        };
+    </script>
 </head>
 <body>
-<DynamicComponent Type="@ChildComponentType" Parameters="@ChildComponentParameters" />
+    <DynamicComponent Type="@ChildComponentType" Parameters="@ChildComponentParameters" />
+
+    @foreach (var script in Scripts)
+    {
+        <script>
+            @((MarkupString)@script.Value)
+        </script>
+    }
 </body>
 </html>
 
-
 @code {
-  /// <summary>
-  /// The base styles to be applied to the component.
-  /// </summary>
-  [Parameter]
-  public string BaseStyles { get; set; } = "";
-  /// <summary>
-  /// The type of the component to be rendered in the html body.
-  /// </summary>
-  [Parameter]
-  public Type ChildComponentType { get; set; } = null!;
-  /// <summary>
-  /// The parameters to be passed to the child component.
-  /// </summary>
-  [Parameter]
-  public IDictionary<string, object> ChildComponentParameters { get; set; } = null!;
+    /// <summary>
+    /// The base styles to be applied to the component.
+    /// </summary>
+    [Parameter]
+    public string BaseStyles { get; set; } = "";
+
+    /// <summary>
+    /// The type of the component to be rendered in the html body.
+    /// </summary>
+    [Parameter]
+    public Type ChildComponentType { get; set; } = null!;
+
+    /// <summary>
+    /// The parameters to be passed to the child component.
+    /// </summary>
+    [Parameter]
+    public IDictionary<string, object> ChildComponentParameters { get; set; } = null!;
+
+    /// <summary>
+    /// The scripts to be included in the html body.
+    /// </summary>
+    [Parameter]
+    public Dictionary<string, string> Scripts { get; set; } = new Dictionary<string, string>();
+
+    /// <summary>
+    /// The name of the JavaScript signal used to indicate when the report is ready.
+    /// </summary>
+    [Parameter]
+    public string ReportIsReadySignal { get; set; } = "reportIsReady";
+
 
 }

@@ -3,10 +3,12 @@ using BlazorReports.Components;
 using BlazorReports.Models;
 using BlazorReports.Services.BrowserServices;
 using BlazorReports.Services.BrowserServices.Problems;
+using BlazorReports.Services.JavascriptServices;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using OneOf;
 using OneOf.Types;
 
@@ -31,15 +33,23 @@ public sealed class ReportService(
   /// Generates a report using the specified component and data
   /// </summary>
   /// <param name="pipeWriter"> The pipe writer to write the report to </param>
+  /// <param name="report"> The report to generate </param>
   /// <param name="data"> The data to use in the report </param>
   /// <param name="cancellationToken"> The cancellation token </param>
   /// <typeparam name="T"> The component to use in the report </typeparam>
   /// <typeparam name="TD"> The type of data to use in the report </typeparam>
   /// <returns> The generated report </returns>
   public async ValueTask<
-    OneOf<Success, ServerBusyProblem, OperationCancelledProblem, BrowserProblem>
+    OneOf<
+      Success,
+      ServerBusyProblem,
+      OperationCancelledProblem,
+      BrowserProblem,
+      CompletedSignalTimeoutProblem
+    >
   > GenerateReport<T, TD>(
     PipeWriter pipeWriter,
+    BlazorReport report,
     TD data,
     CancellationToken cancellationToken = default
   )
@@ -74,6 +84,7 @@ public sealed class ReportService(
       pipeWriter,
       html,
       reportRegistry.DefaultPageSettings,
+      report.CurrentReportJavascriptSettings,
       cancellationToken
     );
   }
@@ -88,7 +99,13 @@ public sealed class ReportService(
   /// <typeparam name="T"> The type of data to use in the report </typeparam>
   /// <returns> The generated report </returns>
   public async ValueTask<
-    OneOf<Success, ServerBusyProblem, OperationCancelledProblem, BrowserProblem>
+    OneOf<
+      Success,
+      ServerBusyProblem,
+      OperationCancelledProblem,
+      BrowserProblem,
+      CompletedSignalTimeoutProblem
+    >
   > GenerateReport<T>(
     PipeWriter pipeWriter,
     BlazorReport blazorReport,
@@ -99,6 +116,9 @@ public sealed class ReportService(
   {
     using var scope = serviceProvider.CreateScope();
     var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
+    var javascriptContainer = scope.ServiceProvider.GetRequiredService<JavascriptContainer>();
+    var options = scope.ServiceProvider.GetRequiredService<IOptions<BlazorReportsOptions>>();
+    var javascriptInternalSettings = options.Value.GlobalJavascriptSettings;
 
     var baseStyles = string.Empty;
     if (!string.IsNullOrEmpty(blazorReport.BaseStyles))
@@ -134,6 +154,25 @@ public sealed class ReportService(
     {
       baseComponentParameters.Add("BaseStyles", baseStyles);
     }
+    if (javascriptContainer.Scripts.Count > 0)
+    {
+      baseComponentParameters.Add("Scripts", javascriptContainer.Scripts);
+    }
+    //Checks if the report has a custom signal if not use the global one
+    if (blazorReport.CurrentReportJavascriptSettings.ReportIsReadySignal is not null)
+    {
+      baseComponentParameters.Add(
+        "ReportIsReadySignal",
+        blazorReport.CurrentReportJavascriptSettings.ReportIsReadySignal
+      );
+    }
+    else
+    {
+      baseComponentParameters.Add(
+        "ReportIsReadySignal",
+        javascriptInternalSettings.ReportIsReadySignal
+      );
+    }
 
     baseComponentParameters.Add("ChildComponentType", blazorReport.Component);
     baseComponentParameters.Add("ChildComponentParameters", childComponentParameters);
@@ -151,7 +190,13 @@ public sealed class ReportService(
 
       var pageSettings = blazorReport.PageSettings ?? reportRegistry.DefaultPageSettings;
 
-      return await browserService.GenerateReport(pipeWriter, html, pageSettings, cancellationToken);
+      return await browserService.GenerateReport(
+        pipeWriter,
+        html,
+        pageSettings,
+        blazorReport.CurrentReportJavascriptSettings,
+        cancellationToken
+      );
     }
     else
     {
@@ -175,7 +220,13 @@ public sealed class ReportService(
   /// <param name="cancellationToken"> The cancellation token </param>
   /// <returns> The generated report </returns>
   public ValueTask<
-    OneOf<Success, ServerBusyProblem, OperationCancelledProblem, BrowserProblem>
+    OneOf<
+      Success,
+      ServerBusyProblem,
+      OperationCancelledProblem,
+      BrowserProblem,
+      CompletedSignalTimeoutProblem
+    >
   > GenerateReport(
     PipeWriter pipeWriter,
     BlazorReport blazorReport,

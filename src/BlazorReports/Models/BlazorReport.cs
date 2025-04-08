@@ -44,4 +44,9 @@ public class BlazorReport
   /// The page settings to use for the report.
   /// </summary>
   public BlazorReportsPageSettings? PageSettings { get; set; }
+
+  /// <summary>
+  /// The current report javascript settings.
+  /// </summary>
+  public required BlazorReportCurrentReportJavascriptSettings CurrentReportJavascriptSettings { get; set; }
 }
